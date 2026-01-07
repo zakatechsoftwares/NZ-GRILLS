@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "canteen-app",
-    "slug": "canteen-app",
+    "name": "NZ Grills",
+    "slug": "nz-grills",
     "version": "1.0.0",
+    "scheme": "nz-grills",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,18 +14,28 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canteen.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.canteen.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "89f0b1db-130b-4196-8cc4-eda83b2d0526"
+      }
     }
   }
 }
