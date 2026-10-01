@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Modal } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import { supabase, PROFILE_COLUMNS } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import PremiumCard from '../../components/PremiumCard';
@@ -31,7 +31,7 @@ export default function ManageStaffScreen() {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .in('role', ['admin', 'staff', 'courier'])
         .order('role');
       
@@ -51,7 +51,7 @@ export default function ManageStaffScreen() {
       // Search by email or name, limited to top 5
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PROFILE_COLUMNS)
         .or(`email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`)
         .limit(5);
 
@@ -70,7 +70,7 @@ export default function ManageStaffScreen() {
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId)
-        .select();
+        .select(PROFILE_COLUMNS);
 
       if (error) {
         console.error('Supabase error:', error);

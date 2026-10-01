@@ -13,3 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Profile columns readable by app users (push tokens are not; see
+// supabase/migrations/20240110_restrict_profiles_and_broadcast.sql).
+export const PROFILE_COLUMNS = 'id, role, full_name, phone, avatar_url, email, created_at, updated_at';

@@ -17,6 +17,31 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Only staff/courier/admin may notify a user; only admins may broadcast
+    const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+    const { data: { user: caller } } = await supabaseClient.auth.getUser(jwt)
+    if (!caller) {
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated' }),
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      )
+    }
+
+    const { data: callerProfile } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .single()
+
+    const role = callerProfile?.role
+    const allowed = broadcast ? role === 'admin' : ['admin', 'staff', 'courier'].includes(role)
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Not allowed to send notifications' }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      )
+    }
+
     let profiles = []
 
     if (broadcast) {
