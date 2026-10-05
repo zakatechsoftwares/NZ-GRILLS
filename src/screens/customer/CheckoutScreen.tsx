@@ -26,6 +26,7 @@ export default function CheckoutScreen() {
   const generateTxRef = () => `tx-ref-${Date.now()}`;
   const [txRef, setTxRef] = useState(generateTxRef());
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [pendingAmount, setPendingAmount] = useState(0);
 
   const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-e4bb46908aa02f101fc0420306b1bc17-X';
 
@@ -37,6 +38,7 @@ export default function CheckoutScreen() {
         // 1. Create order as pending FIRST
         const order = await createOrder('pending');
         setPendingOrderId(order.id);
+        setPendingAmount(Number(order.total_amount));
         setTxRef(generateTxRef());
         setShowPaymentModal(true);
       } catch (error: any) {
@@ -93,9 +95,16 @@ export default function CheckoutScreen() {
 
       if (itemsError) throw itemsError;
 
-      // Ideally call backend to verify transactionId if 'paid'
-      
-      return order;
+      // The database prices items from the menu and recalculates the total
+      const { data: pricedOrder, error: pricedError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', order.id)
+        .single();
+
+      if (pricedError) throw pricedError;
+
+      return pricedOrder;
   };
 
   const handleSuccess = () => {
@@ -245,7 +254,7 @@ export default function CheckoutScreen() {
         visible={showPaymentModal}
         publicKey={FLUTTERWAVE_PUBLIC_KEY}
         txRef={txRef}
-        amount={totalAmount}
+        amount={pendingAmount}
         currency="NGN"
         customerEmail={user?.email || 'customer@nzgrills.com'}
         customerName="NZ Grills User"
