@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, ROLES, SIZES } from '../../constants/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -15,7 +15,6 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'customer' | 'staff' | 'courier'>('customer');
   const [loading, setLoading] = useState(false);
 
   async function signUpWithEmail() {
@@ -38,7 +37,7 @@ export default function SignupScreen() {
         options: {
           data: {
             full_name: fullName,
-            role: role,
+            phone,
           },
         },
       });
@@ -117,29 +116,6 @@ export default function SignupScreen() {
           icon={<Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} />}
         />
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>I am a:</Text>
-          <View style={styles.roleContainer}>
-            {(['customer', 'staff', 'courier'] as const).map((r) => (
-              <TouchableOpacity
-                key={r}
-                style={[
-                  styles.roleButton,
-                  role === r && styles.roleButtonActive
-                ]}
-                onPress={() => setRole(r)}
-              >
-                <Text style={[
-                  styles.roleText,
-                  role === r && styles.roleTextActive
-                ]}>
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         <PremiumButton
           title="Sign Up"
           onPress={signUpWithEmail}
@@ -189,43 +165,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: SIZES.margin,
-  },
-  inputContainer: {
-    marginBottom: SPACING.s,
-  },
-  label: {
-    ...FONTS.body3,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-    marginLeft: 4,
-    fontWeight: '600',
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: SPACING.s,
-    marginTop: SPACING.xs,
-  },
-  roleButton: {
-    flex: 1,
-    padding: SPACING.s,
-    borderRadius: SIZES.radiusSm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-  },
-  roleButtonActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '10',
-  },
-  roleText: {
-    color: COLORS.text,
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-  },
-  roleTextActive: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
   },
   button: {
     marginTop: SPACING.s,

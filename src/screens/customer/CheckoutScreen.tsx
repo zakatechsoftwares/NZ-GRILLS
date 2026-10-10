@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../../lib/CartContext';
@@ -27,6 +27,8 @@ export default function CheckoutScreen() {
   const [txRef, setTxRef] = useState(generateTxRef());
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [pendingAmount, setPendingAmount] = useState(0);
+  // Flutterwave also fires "closed" after a successful payment; don't cancel then
+  const paymentSucceededRef = useRef(false);
 
   const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-e4bb46908aa02f101fc0420306b1bc17-X';
 
@@ -39,6 +41,7 @@ export default function CheckoutScreen() {
         const order = await createOrder('pending');
         setPendingOrderId(order.id);
         setPendingAmount(Number(order.total_amount));
+        paymentSucceededRef.current = false;
         setTxRef(generateTxRef());
         setShowPaymentModal(true);
       } catch (error: any) {
@@ -116,7 +119,15 @@ export default function CheckoutScreen() {
     }, 2000);
   };
 
+  const cancelPendingOrder = async () => {
+    if (paymentSucceededRef.current || !pendingOrderId) return;
+    const { error } = await supabase.rpc('cancel_unpaid_order', { order_id: pendingOrderId });
+    if (error) console.log('Failed to cancel unpaid order', error);
+    setPendingOrderId(null);
+  };
+
   const handlePaymentSuccess = async (transactionId: string) => {
+    paymentSucceededRef.current = true;
     try {
       setShowPaymentModal(false);
       setLoading(true);
@@ -145,7 +156,6 @@ export default function CheckoutScreen() {
     } catch (error: any) {
        console.log('Verification failed', error);
        Alert.alert('Verification Failed', 'Payment not verified. Please contact support if you were charged.');
-       // Optional: You could update order to 'failed' here
     } finally {
       setLoading(false);
       setTxRef(generateTxRef());
@@ -154,11 +164,13 @@ export default function CheckoutScreen() {
 
   const handlePaymentError = (error: string) => {
     setShowPaymentModal(false);
+    cancelPendingOrder();
     Alert.alert('Payment Failed', error);
   };
 
   const handlePaymentClose = () => {
     setShowPaymentModal(false);
+    cancelPendingOrder();
   };
 
   if (showSuccess) {
