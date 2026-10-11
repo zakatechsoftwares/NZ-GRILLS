@@ -87,7 +87,7 @@ export default function OrdersScreen() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case 'pending': return COLORS.warning;
       case 'preparing': return COLORS.info;
@@ -99,7 +99,7 @@ export default function OrdersScreen() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | null) => {
     switch (status) {
       case 'pending': return 'hourglass-outline';
       case 'preparing': return 'restaurant-outline';
@@ -110,7 +110,7 @@ export default function OrdersScreen() {
     }
   };
 
-  const getProgress = (status: string) => {
+  const getProgress = (status: string | null) => {
     switch (status) {
       case 'pending': return 0.1;
       case 'preparing': return 0.4;
@@ -130,7 +130,7 @@ export default function OrdersScreen() {
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
             <Ionicons name={getStatusIcon(item.status)} size={12} color={getStatusColor(item.status)} style={{ marginRight: 4 }} />
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
+            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{(item.status ?? '').toUpperCase()}</Text>
           </View>
         </View>
 
@@ -140,7 +140,7 @@ export default function OrdersScreen() {
         </View>
 
         {/* Progress Bar */}
-        {['pending', 'preparing', 'ready', 'out_for_delivery'].includes(item.status) && (
+        {['pending', 'preparing', 'ready', 'out_for_delivery'].includes(item.status ?? '') && (
           <View style={styles.progressContainer}>
             <View style={[styles.progressBar, { width: `${getProgress(item.status) * 100}%`, backgroundColor: getStatusColor(item.status) }]} />
           </View>

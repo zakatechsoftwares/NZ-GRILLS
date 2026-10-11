@@ -194,7 +194,7 @@ export async function reorderCategory(id: string, direction: 'up' | 'down') {
 
     // Swap display_orders
     await Promise.all([
-      updateCategory(id, { display_order: targetCategory.display_order }),
+      updateCategory(id, { display_order: targetCategory.display_order ?? 0 }),
       updateCategory(targetCategory.id, { display_order: currentOrder }),
     ]);
   } else {
@@ -209,7 +209,7 @@ export async function reorderCategory(id: string, direction: 'up' | 'down') {
 
     // Swap display_orders
     await Promise.all([
-      updateCategory(id, { display_order: targetCategory.display_order }),
+      updateCategory(id, { display_order: targetCategory.display_order ?? 0 }),
       updateCategory(targetCategory.id, { display_order: currentOrder }),
     ]);
   }

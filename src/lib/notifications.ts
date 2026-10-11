@@ -125,7 +125,8 @@ export async function sendOrderNotification(
     body = `Your order #${orderRef} is on the way!`;
   }
 
-  // 1. Insert into database (reliable in-app notification)
+  // In-app notification; the database sends the push
+  // (see supabase/migrations/20240114_push_notifications.sql)
   const { error } = await supabase
     .from('notifications')
     .insert({
@@ -138,21 +139,5 @@ export async function sendOrderNotification(
 
   if (error) {
     console.error('Error creating notification:', error);
-  }
-
-  // 2. Try to trigger Edge Function for Push Notification (best effort)
-  try {
-     // Check if we can invoke the function (requires deployment)
-     // For now we just log, or we could try invoke
-     console.log('Notification created in DB for:', userId);
-     
-     /* 
-     // Any edge function invocation would go here
-     await supabase.functions.invoke('push-notification', {
-        body: { userId, title, body, data: { orderId } } 
-     });
-     */
-  } catch (e) {
-    console.log('Push notification skipped (dev mode)');
   }
 }

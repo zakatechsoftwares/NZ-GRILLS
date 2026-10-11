@@ -40,3 +40,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase / Google Play credentials (provide via EAS secrets)
+google-services.json
+google-service-account*.json

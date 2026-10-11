@@ -44,7 +44,7 @@ export default function FavoritesScreen() {
 
     return (
       <PremiumCard style={styles.card}>
-        <Image source={{ uri: menuItem.image_url }} style={styles.image} />
+        <Image source={{ uri: menuItem.image_url ?? undefined }} style={styles.image} />
         <View style={styles.content}>
           <View style={styles.row}>
             <Text style={styles.name}>{menuItem.name}</Text>

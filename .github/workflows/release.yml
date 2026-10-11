@@ -1,0 +1,49 @@
+name: Release Android
+
+# Builds a Play Store AAB on EAS and submits it to the internal testing track.
+# Run manually from the Actions tab, or push a tag like v1.0.1.
+#
+# Requires:
+#   - GitHub secret EXPO_TOKEN (expo.dev > Account settings > Access tokens)
+#   - Google Play service account key uploaded to EAS:
+#       eas credentials -p android  >  Google Service Account  >  Upload
+#   - The first AAB uploaded to Play Console manually (Google requirement)
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Submit to Play internal testing after the build
+        type: boolean
+        default: true
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build AAB (and submit to internal testing)
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.submit }}" = "true" ]; then
+            eas build --platform android --profile production --non-interactive --no-wait --auto-submit
+          else
+            eas build --platform android --profile production --non-interactive --no-wait
+          fi

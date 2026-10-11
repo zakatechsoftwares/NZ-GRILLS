@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { Database } from '../../types/supabase';
 
 // Types
 export interface Favorite {
@@ -6,15 +7,7 @@ export interface Favorite {
   user_id: string;
   menu_item_id: string;
   created_at: string;
-  menu_items?: {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    image_url: string;
-    category_id: string;
-    is_available: boolean;
-  };
+  menu_items?: Database['public']['Tables']['menu_items']['Row'];
 }
 
 export interface Review {

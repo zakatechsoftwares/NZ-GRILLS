@@ -83,7 +83,7 @@ export default function PremiumButton({
       ) : (
         <>
           {icon && <React.Fragment>{icon}</React.Fragment>}
-          <Text style={[styles.text, { color: getTextColor() }, icon && { marginLeft: 8 }, textStyle]}>
+          <Text style={[styles.text, { color: getTextColor() }, icon ? { marginLeft: 8 } : null, textStyle]}>
             {title}
           </Text>
         </>

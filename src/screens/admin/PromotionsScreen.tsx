@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     marginLeft: SPACING.s,
-    color: COLORS.text,
     ...FONTS.body3,
+    color: COLORS.text,
   },
 });

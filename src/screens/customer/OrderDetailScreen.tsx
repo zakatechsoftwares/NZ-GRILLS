@@ -80,7 +80,8 @@ export default function OrderDetailScreen() {
 
   // Visual Tracker
   const steps = ['pending', 'preparing', 'ready', 'delivered'];
-  const currentStepIndex = steps.indexOf(order.status) > -1 ? steps.indexOf(order.status) : 0;
+  const status = order.status ?? 'pending';
+  const currentStepIndex = steps.indexOf(status) > -1 ? steps.indexOf(status) : 0;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -95,7 +96,7 @@ export default function OrderDetailScreen() {
         <PremiumCard style={styles.statusCard}>
             <View style={styles.statusHeader}>
                 <Ionicons name="time-outline" size={24} color={COLORS.primary} />
-                <Text style={styles.statusText}>{order.status.toUpperCase()}</Text>
+                <Text style={styles.statusText}>{status.toUpperCase()}</Text>
             </View>
             <Text style={styles.estimatedText}>
                 {order.status === 'pending' ? 'Waiting for restaurant confirmation...' : 
