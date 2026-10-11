@@ -23,7 +23,6 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.nzgrills.app",
-      "versionCode": 3,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
