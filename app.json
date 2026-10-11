@@ -2,7 +2,7 @@
   "expo": {
     "name": "NZ Grills",
     "slug": "nz-grills",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "scheme": "nz-grills",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,14 +15,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.canteen.app"
+      "bundleIdentifier": "com.nzgrills.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.canteen.app",
+      "package": "com.nzgrills.app",
+      "versionCode": 3,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
