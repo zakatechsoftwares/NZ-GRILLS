@@ -4,7 +4,7 @@ import { supabase, PROFILE_COLUMNS } from './supabase';
 import { Database } from '../types/supabase';
 import { registerForPushNotificationsAsync, updateUserPushToken } from './notifications';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = Omit<Database['public']['Tables']['profiles']['Row'], 'push_token' | 'expo_push_token'>;
 
 type AuthContextType = {
   session: Session | null;
