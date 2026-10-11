@@ -45,11 +45,11 @@ serve(async (req) => {
     let profiles = []
 
     if (broadcast) {
-      // Fetch all users with push tokens
+      // Fetch users who accept promotions
       const { data: users, error } = await supabaseClient
         .from('profiles')
-        .select('id, expo_push_token')
-        .not('expo_push_token', 'is', null)
+        .select('id, expo_push_token, notify_push')
+        .eq('notify_promotions', true)
       
       if (error) throw error
       profiles = users
@@ -57,7 +57,7 @@ serve(async (req) => {
       // Fetch specific user
       const { data: user, error } = await supabaseClient
         .from('profiles')
-        .select('id, expo_push_token')
+        .select('id, expo_push_token, notify_push')
         .eq('id', userId)
         .single()
       
@@ -70,17 +70,16 @@ serve(async (req) => {
     const notificationsToInsert = []
 
     for (const profile of profiles) {
-      if (!profile.expo_push_token || !profile.expo_push_token.startsWith('ExponentPushToken')) {
-        continue
+      // In-app notification always; push only if enabled and a valid token exists
+      if (profile.notify_push && profile.expo_push_token?.startsWith('ExponentPushToken')) {
+        messages.push({
+          to: profile.expo_push_token,
+          sound: 'default',
+          title,
+          body,
+          data: data || {},
+        })
       }
-
-      messages.push({
-        to: profile.expo_push_token,
-        sound: 'default',
-        title,
-        body,
-        data: data || {},
-      })
 
       notificationsToInsert.push({
         user_id: profile.id,

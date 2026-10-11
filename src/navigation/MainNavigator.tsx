@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HomeStack from '../navigation/HomeStack';
 import OrdersStack from '../navigation/OrdersStack';
-import ProfileScreen from '../screens/auth/ProfileScreen';
+import ProfileStack from '../navigation/ProfileStack';
 import { COLORS } from '../constants/theme';
 import PlaceholderHomeScreen from '../screens/PlaceholderHomeScreen';
 
@@ -43,7 +43,7 @@ export default function MainNavigator() {
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen} 
+        component={ProfileStack} 
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />

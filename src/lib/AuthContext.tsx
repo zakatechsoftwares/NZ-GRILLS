@@ -4,7 +4,10 @@ import { supabase, PROFILE_COLUMNS } from './supabase';
 import { Database } from '../types/supabase';
 import { registerForPushNotificationsAsync, updateUserPushToken } from './notifications';
 
-type Profile = Omit<Database['public']['Tables']['profiles']['Row'], 'push_token' | 'expo_push_token'>;
+export type Profile = Omit<Database['public']['Tables']['profiles']['Row'], 'push_token' | 'expo_push_token'> & {
+  notify_push: boolean;
+  notify_promotions: boolean;
+};
 
 type AuthContextType = {
   session: Session | null;
@@ -80,6 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data) {
         setProfile(data);
+        if (data.notify_push) registerToken(userId);
       }
     } catch (error) {
       console.log('Error in fetchProfile:', error);
@@ -90,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const registerToken = async (userId: string) => {
     try {
-      const token = await registerForPushNotificationsAsync();
+      const token = await registerForPushNotificationsAsync({ prompt: false });
       if (token) {
         await updateUserPushToken(userId, token);
       }

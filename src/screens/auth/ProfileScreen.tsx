@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
 import { COLORS, SPACING, FONTS } from '../../constants/theme';
-import { supabase } from '../../lib/supabase';
 
 export default function ProfileScreen() {
-  const { profile, signOut, refreshProfile } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  
-  // Form state
-  // In a real app we'd have full edit capability
-  
+  const navigation = useNavigation<any>();
+  const { profile, signOut } = useAuth();
+
   const handleSignOut = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -30,7 +27,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Text style={styles.name}>{profile.full_name}</Text>
-        <Text style={styles.role}>{profile.role.toUpperCase()}</Text>
+        <Text style={styles.role}>{profile.role?.toUpperCase()}</Text>
       </View>
 
       <View style={styles.section}>
@@ -47,15 +44,16 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Coming Soon', 'Edit Profile coming soon')}>
-          <Text style={styles.menuItemText}>Edit Profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Coming Soon', 'Addresses coming soon')}>
-          <Text style={styles.menuItemText}>Manage Addresses</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Coming Soon', 'Notifications coming soon')}>
-          <Text style={styles.menuItemText}>Notification Preferences</Text>
-        </TouchableOpacity>
+        {[
+          { title: 'Edit Profile', screen: 'EditProfile' },
+          { title: 'Manage Addresses', screen: 'Addresses' },
+          { title: 'Notification Preferences', screen: 'NotificationPreferences' },
+        ].map(item => (
+          <TouchableOpacity key={item.screen} style={styles.menuItem} onPress={() => navigation.navigate(item.screen)}>
+            <Text style={styles.menuItemText}>{item.title}</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+          </TouchableOpacity>
+        ))}
       </View>
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -145,6 +143,9 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
   },
   menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: SPACING.m,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border + '50',

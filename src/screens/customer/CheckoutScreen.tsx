@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../../lib/CartContext';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -10,14 +10,17 @@ import PremiumButton from '../../components/PremiumButton';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumCard from '../../components/PremiumCard';
 import FlutterwaveWebView from '../../components/FlutterwaveWebView';
+import { Address, formatAddress, getAddress, getDefaultAddress, toDeliveryAddress } from '../../lib/api/addresses';
 
 export default function CheckoutScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { items, totalAmount, clearCart } = useCart();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
-  const [address, setAddress] = useState('Room 305, Student Hostel A'); 
+  const [deliveryAddress, setDeliveryAddress] = useState<Address | null>(null);
+  const [addressLoading, setAddressLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
@@ -32,8 +35,29 @@ export default function CheckoutScreen() {
 
   const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-e4bb46908aa02f101fc0420306b1bc17-X';
 
+  // Address picked in the Addresses screen, otherwise the user's default
+  const selectedAddressId: string | undefined = route.params?.addressId;
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedAddressId ? deliveryAddress?.id === selectedAddressId : deliveryAddress) return;
+      (selectedAddressId ? getAddress(selectedAddressId) : getDefaultAddress())
+        .then(address => setDeliveryAddress(address))
+        .catch(error => console.log('Failed to load address', error))
+        .finally(() => setAddressLoading(false));
+    }, [selectedAddressId, deliveryAddress])
+  );
+
+  const requireAddress = () => {
+    if (deliveryAddress) return true;
+    Alert.alert('Delivery address needed', 'Add a delivery address before placing your order.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Add Address', onPress: () => navigation.navigate('AddressForm') },
+    ]);
+    return false;
+  };
+
   const handleFlutterwaveStart = async () => {
-      if (!user) return;
+      if (!user || !requireAddress()) return;
       setLoading(true);
       
       try {
@@ -52,7 +76,7 @@ export default function CheckoutScreen() {
   };
 
   const handleCashOrder = async () => {
-      if (!user) return;
+      if (!user || !requireAddress()) return;
       setLoading(true);
       
       try {
@@ -67,6 +91,7 @@ export default function CheckoutScreen() {
 
   const createOrder = async (paymentStatus: 'paid' | 'pending', transactionId?: string) => {
     if (!user) throw new Error('User not authenticated');
+    if (!deliveryAddress) throw new Error('No delivery address selected');
 
     const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -75,7 +100,7 @@ export default function CheckoutScreen() {
           total_amount: totalAmount,
           status: 'pending',
           payment_status: paymentStatus,
-          delivery_address: { address },
+          delivery_address: toDeliveryAddress(deliveryAddress),
           delivery_notes: 'Please ring the bell', // In a real app, bind this to an input
         })
         .select()
@@ -197,13 +222,30 @@ export default function CheckoutScreen() {
         <PremiumCard>
             <View style={styles.row}>
                 <Ionicons name="location-outline" size={24} color={COLORS.primary} style={styles.icon} />
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.addressLabel}>Hostel Address</Text>
-                    <Text style={styles.addressText}>{address}</Text>
-                </View>
-                <TouchableOpacity>
-                   <Text style={styles.editText}>Edit</Text>
-                </TouchableOpacity>
+                {deliveryAddress ? (
+                  <>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.addressLabel}>{deliveryAddress.label}</Text>
+                        <Text style={styles.addressText}>{formatAddress(deliveryAddress)}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => navigation.navigate('Addresses', { selectMode: true })}>
+                       <Text style={styles.editText}>Change</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.addressText}>
+                          {addressLoading ? 'Loading address…' : 'No delivery address yet'}
+                        </Text>
+                    </View>
+                    {!addressLoading && (
+                      <TouchableOpacity onPress={() => navigation.navigate('AddressForm')}>
+                         <Text style={styles.editText}>Add</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
             </View>
         </PremiumCard>
       </View>

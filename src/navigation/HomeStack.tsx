@@ -7,6 +7,8 @@ import CartScreen from '../screens/customer/CartScreen';
 import CheckoutScreen from '../screens/customer/CheckoutScreen';
 import FavoritesScreen from '../screens/customer/FavoritesScreen';
 import NotificationsScreen from '../screens/customer/NotificationsScreen';
+import AddressesScreen from '../screens/profile/AddressesScreen';
+import AddressFormScreen from '../screens/profile/AddressFormScreen';
 
 const Stack = createStackNavigator();
 
@@ -20,6 +22,8 @@ export default function HomeStack() {
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Addresses" component={AddressesScreen} />
+      <Stack.Screen name="AddressForm" component={AddressFormScreen} />
     </Stack.Navigator>
   );
 }

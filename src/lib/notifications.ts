@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -14,7 +15,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function registerForPushNotificationsAsync() {
+// prompt: false only registers if permission was already granted (no dialog)
+export async function registerForPushNotificationsAsync({ prompt = true } = {}) {
   let token;
 
   if (Platform.OS === 'android') {
@@ -29,12 +31,11 @@ export async function registerForPushNotificationsAsync() {
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== 'granted' && prompt) {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!');
       return;
     }
     // Learn more about projectId:
@@ -44,7 +45,8 @@ export async function registerForPushNotificationsAsync() {
         // or just try default getExpoPushTokenAsync
         // NOTE: For Expo Go, this works but won't receive remote push from external servers easily without EAS configuration.
         // But we can use it for local testing or dev builds.
-        const tokenData = await Notifications.getExpoPushTokenAsync();
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        const tokenData = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
         token = tokenData.data;
         console.log('Expo Push Token:', token);
     } catch (e) {
@@ -65,6 +67,15 @@ export async function updateUserPushToken(userId: string, token: string) {
         .eq('id', userId);
     
     if (error) console.error('Error updating push token:', error);
+}
+
+export async function clearUserPushToken(userId: string) {
+    const { error } = await supabase
+        .from('profiles')
+        .update({ expo_push_token: null })
+        .eq('id', userId);
+
+    if (error) throw error;
 }
 
 // Send a local notification (for immediate feedback testing)
