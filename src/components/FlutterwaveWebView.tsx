@@ -17,6 +17,9 @@ interface FlutterwaveWebViewProps {
   onError: (error: string) => void;
 }
 
+// Values go into an inline script, so a quote or </script> in a name must not break it
+const toJsString = (value: string) => JSON.stringify(value).replace(/</g, '\u003c');
+
 export default function FlutterwaveWebView({
   visible,
   publicKey,
@@ -121,15 +124,15 @@ export default function FlutterwaveWebView({
                 }
                 
                 FlutterwaveCheckout({
-                    public_key: "${publicKey}",
-                    tx_ref: "${txRef}",
+                    public_key: ${toJsString(publicKey)},
+                    tx_ref: ${toJsString(txRef)},
                     amount: ${amount},
-                    currency: "${currency}",
+                    currency: ${toJsString(currency)},
                     payment_options: "card,ussd,banktransfer",
                     customer: {
-                        email: "${customerEmail}",
-                        name: "${customerName}",
-                        phone_number: "${customerPhone}"
+                        email: ${toJsString(customerEmail)},
+                        name: ${toJsString(customerName)},
+                        phone_number: ${toJsString(customerPhone)}
                     },
                     customizations: {
                         title: "NZ Grills Order Payment",

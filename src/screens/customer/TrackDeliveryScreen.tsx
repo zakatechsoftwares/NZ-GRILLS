@@ -6,7 +6,8 @@ import { COLORS, SPACING, FONTS, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Database } from '../../types/supabase';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { calculateDistance, calculateETA, formatDistance } from '../../lib/location';
+import { calculateDistance, calculateETA, formatDistance, MAPS_ENABLED, openDeliveryAddressInMaps } from '../../lib/location';
+import MapPlaceholder from '../../components/MapPlaceholder';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 type Order = Database['public']['Tables']['orders']['Row'];
@@ -122,41 +123,49 @@ export default function TrackDeliveryScreen() {
       </View>
 
       {/* Map */}
-      <MapView 
-        style={styles.map} 
-        initialRegion={region}
-        provider={PROVIDER_GOOGLE}
-      >
-        {/* Delivery Destination */}
-        <Marker
-          coordinate={{
-            latitude: deliveryAddr?.latitude || 6.5244,
-            longitude: deliveryAddr?.longitude || 3.3792,
-          }}
-          title="Your Location"
-          pinColor={COLORS.success}
+      {MAPS_ENABLED ? (
+        <MapView 
+          style={styles.map} 
+          initialRegion={region}
+          provider={PROVIDER_GOOGLE}
         >
-          <View style={styles.destinationMarker}>
-            <Ionicons name="home" size={24} color={COLORS.surface} />
-          </View>
-        </Marker>
-        
-        {/* Courier Location */}
-        {courierLocation && (
+          {/* Delivery Destination */}
           <Marker
-            coordinate={courierLocation}
-            title="Courier"
-            pinColor={COLORS.primary}
+            coordinate={{
+              latitude: deliveryAddr?.latitude || 6.5244,
+              longitude: deliveryAddr?.longitude || 3.3792,
+            }}
+            title="Your Location"
+            pinColor={COLORS.success}
           >
-            <Animated.View 
-              entering={FadeInDown}
-              style={styles.courierMarker}
-            >
-              <Ionicons name="bicycle" size={24} color={COLORS.surface} />
-            </Animated.View>
+            <View style={styles.destinationMarker}>
+              <Ionicons name="home" size={24} color={COLORS.surface} />
+            </View>
           </Marker>
-        )}
-      </MapView>
+        
+          {/* Courier Location */}
+          {courierLocation && (
+            <Marker
+              coordinate={courierLocation}
+              title="Courier"
+              pinColor={COLORS.primary}
+            >
+              <Animated.View 
+                entering={FadeInDown}
+                style={styles.courierMarker}
+              >
+                <Ionicons name="bicycle" size={24} color={COLORS.surface} />
+              </Animated.View>
+            </Marker>
+          )}
+        </MapView>
+      ) : (
+        <MapPlaceholder
+          style={styles.map}
+          address={deliveryAddr?.address}
+          onOpenMaps={() => openDeliveryAddressInMaps(deliveryAddr, 'Your Location')}
+        />
+      )}
 
       {/* Status Card */}
       <View style={styles.statusCard}>

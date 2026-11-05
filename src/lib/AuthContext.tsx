@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, PROFILE_COLUMNS } from './supabase';
 import { Database } from '../types/supabase';
-import { registerForPushNotificationsAsync, updateUserPushToken } from './notifications';
+import { clearUserPushToken, registerForPushNotificationsAsync, updateUserPushToken } from './notifications';
 
 export type Profile = Omit<Database['public']['Tables']['profiles']['Row'], 'push_token' | 'expo_push_token'> & {
   notify_push: boolean;
@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const registeredUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Check active sessions and subscribes to auth changes
@@ -93,8 +94,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const registerToken = async (userId: string) => {
+    // fetchProfile runs more than once per login; only ask for permission once
+    if (registeredUserRef.current === userId) return;
+    registeredUserRef.current = userId;
     try {
-      const token = await registerForPushNotificationsAsync({ prompt: false });
+      const token = await registerForPushNotificationsAsync();
       if (token) {
         await updateUserPushToken(userId, token);
       }
@@ -110,6 +114,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Stop this phone receiving pushes for the account that signed out
+    if (user) {
+      await clearUserPushToken(user.id).catch(e => console.log('Failed to clear push token:', e));
+    }
+    registeredUserRef.current = null;
     await supabase.auth.signOut();
   };
 

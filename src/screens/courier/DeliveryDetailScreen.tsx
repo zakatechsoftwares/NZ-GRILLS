@@ -12,8 +12,10 @@ import {
   calculateDistance, 
   calculateETA, 
   formatDistance,
-  openMapsNavigation 
+  MAPS_ENABLED,
+  openDeliveryAddressInMaps
 } from '../../lib/location';
+import MapPlaceholder from '../../components/MapPlaceholder';
 import { useAuth } from '../../lib/AuthContext';
 import { sendOrderNotification } from '../../lib/notifications';
 
@@ -173,12 +175,7 @@ export default function DeliveryDetailScreen() {
   };
 
   const handleOpenMaps = () => {
-    if (order?.delivery_address) {
-      const addr = order.delivery_address as any;
-      if (addr.latitude && addr.longitude) {
-        openMapsNavigation(addr.latitude, addr.longitude, 'Delivery Location');
-      }
-    }
+    openDeliveryAddressInMaps(order?.delivery_address as any, 'Delivery Location');
   };
 
   if (!order) {
@@ -199,36 +196,44 @@ export default function DeliveryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView 
-        style={styles.map} 
-        initialRegion={region}
-        provider={PROVIDER_GOOGLE}
-        showsUserLocation={isTracking}
-        showsMyLocationButton={isTracking}
-      >
-        {/* Destination Marker */}
-        <Marker
-          coordinate={{
-            latitude: deliveryAddr?.latitude || 6.5244,
-            longitude: deliveryAddr?.longitude || 3.3792,
-          }}
-          title="Delivery Location"
-          pinColor={COLORS.error}
-        />
-        
-        {/* Courier Location Marker */}
-        {courierLocation && (
+      {MAPS_ENABLED ? (
+        <MapView 
+          style={styles.map} 
+          initialRegion={region}
+          provider={PROVIDER_GOOGLE}
+          showsUserLocation={isTracking}
+          showsMyLocationButton={isTracking}
+        >
+          {/* Destination Marker */}
           <Marker
-            coordinate={courierLocation}
-            title="Your Location"
-            pinColor={COLORS.primary}
-          >
-            <View style={styles.courierMarker}>
-              <Ionicons name="bicycle" size={24} color={COLORS.surface} />
-            </View>
-          </Marker>
-        )}
-      </MapView>
+            coordinate={{
+              latitude: deliveryAddr?.latitude || 6.5244,
+              longitude: deliveryAddr?.longitude || 3.3792,
+            }}
+            title="Delivery Location"
+            pinColor={COLORS.error}
+          />
+        
+          {/* Courier Location Marker */}
+          {courierLocation && (
+            <Marker
+              coordinate={courierLocation}
+              title="Your Location"
+              pinColor={COLORS.primary}
+            >
+              <View style={styles.courierMarker}>
+                <Ionicons name="bicycle" size={24} color={COLORS.surface} />
+              </View>
+            </Marker>
+          )}
+        </MapView>
+      ) : (
+        <MapPlaceholder
+          style={styles.map}
+          address={deliveryAddr?.address}
+          onOpenMaps={handleOpenMaps}
+        />
+      )}
 
       {/* Top Status Bar */}
       {isTracking && (

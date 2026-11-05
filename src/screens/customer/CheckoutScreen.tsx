@@ -16,11 +16,12 @@ export default function CheckoutScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { items, totalAmount, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [deliveryAddress, setDeliveryAddress] = useState<Address | null>(null);
   const [addressLoading, setAddressLoading] = useState(true);
+  const [deliveryNotes, setDeliveryNotes] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
@@ -101,7 +102,7 @@ export default function CheckoutScreen() {
           status: 'pending',
           payment_status: paymentStatus,
           delivery_address: toDeliveryAddress(deliveryAddress),
-          delivery_notes: 'Please ring the bell', // In a real app, bind this to an input
+          delivery_notes: deliveryNotes.trim() || null,
         })
         .select()
         .single();
@@ -248,6 +249,13 @@ export default function CheckoutScreen() {
                 )}
             </View>
         </PremiumCard>
+        <PremiumInput
+          label="Delivery notes (optional)"
+          placeholder="e.g. Call when you arrive"
+          value={deliveryNotes}
+          onChangeText={setDeliveryNotes}
+          containerStyle={styles.notesInput}
+        />
       </View>
 
       <View style={styles.section}>
@@ -287,6 +295,21 @@ export default function CheckoutScreen() {
         </PremiumCard>
       </View>
 
+      <View style={styles.demoNotice}>
+        <Ionicons name="information-circle-outline" size={24} color={COLORS.warning} style={styles.icon} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.demoTitle}>Demo app</Text>
+          <Text style={styles.demoText}>
+            This is a portfolio demo. No real money is charged and no food will be delivered.
+          </Text>
+          {paymentMethod === 'card' && (
+            <Text style={styles.demoText}>
+              Test card: 5531 8866 5214 2950, CVV 564, expiry 09/32, PIN 3310, OTP 12345
+            </Text>
+          )}
+        </View>
+      </View>
+
       {paymentMethod === 'card' ? (
           <PremiumButton 
             title="Pay with Flutterwave"
@@ -311,8 +334,8 @@ export default function CheckoutScreen() {
         amount={pendingAmount}
         currency="NGN"
         customerEmail={user?.email || 'customer@nzgrills.com'}
-        customerName="NZ Grills User"
-        customerPhone="08012345678"
+        customerName={profile?.full_name || 'Customer'}
+        customerPhone={profile?.phone || ''}
         onClose={handlePaymentClose}
         onSuccess={handlePaymentSuccess}
         onError={handlePaymentError}
@@ -347,6 +370,28 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: SPACING.l,
+  },
+  notesInput: {
+    marginTop: SPACING.m,
+  },
+  demoNotice: {
+    flexDirection: 'row',
+    padding: SPACING.m,
+    marginBottom: SPACING.l,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    backgroundColor: COLORS.warning + '15',
+  },
+  demoTitle: {
+    ...FONTS.body1,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  demoText: {
+    ...FONTS.body3,
+    color: COLORS.text,
+    marginTop: SPACING.xs,
   },
   sectionTitle: {
     ...FONTS.h3,

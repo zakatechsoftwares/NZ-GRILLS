@@ -1,6 +1,10 @@
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
 import { Platform, Linking } from 'react-native';
 import { supabase } from './supabase';
+
+// False in builds without a Google Maps API key (see app.config.js)
+export const MAPS_ENABLED = !!Constants.expoConfig?.extra?.mapsEnabled;
 
 /**
  * Request location permissions from user
@@ -172,5 +176,20 @@ export async function openMapsNavigation(latitude: number, longitude: number, la
       // Fallback to Google Maps web
       await Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
     }
+  }
+}
+
+/**
+ * Open an order's delivery address in the maps app, using its pinned location
+ * if it has one and searching by address text otherwise
+ */
+export async function openDeliveryAddressInMaps(
+  address: { address?: string; latitude?: number | null; longitude?: number | null } | null,
+  label?: string
+) {
+  if (address?.latitude && address?.longitude) {
+    await openMapsNavigation(address.latitude, address.longitude, label);
+  } else if (address?.address) {
+    await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.address)}`);
   }
 }

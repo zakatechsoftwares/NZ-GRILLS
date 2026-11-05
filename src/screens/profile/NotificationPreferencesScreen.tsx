@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, Alert, Linking } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { clearUserPushToken, registerForPushNotificationsAsync, updateUserPushToken } from '../../lib/notifications';
@@ -11,6 +12,13 @@ export default function NotificationPreferencesScreen() {
   const [notifyPush, setNotifyPush] = useState(!!profile?.notify_push);
   const [notifyPromotions, setNotifyPromotions] = useState(!!profile?.notify_promotions);
   const [saving, setSaving] = useState(false);
+
+  // The preference can be on while the phone blocks notifications; show that as off
+  useEffect(() => {
+    Notifications.getPermissionsAsync().then(({ status }) => {
+      if (status !== 'granted') setNotifyPush(false);
+    });
+  }, []);
 
   if (!profile) return null;
 
