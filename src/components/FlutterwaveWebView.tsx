@@ -18,7 +18,7 @@ interface FlutterwaveWebViewProps {
 }
 
 // Values go into an inline script, so a quote or </script> in a name must not break it
-const toJsString = (value: string) => JSON.stringify(value).replace(/</g, '\u003c');
+const toJsString = (value: string) => JSON.stringify(value).replace(/</g, '\\u003c');
 
 export default function FlutterwaveWebView({
   visible,
