@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zak Canteen",
     "slug": "nz-grills",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "scheme": "nz-grills",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
