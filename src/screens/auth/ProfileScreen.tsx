@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS } from '../../constants/theme';
 
 export default function ProfileScreen() {
@@ -14,6 +15,28 @@ export default function ProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: signOut }
     ]);
+  };
+
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) {
+      Alert.alert('Could not delete account', error.message);
+      return;
+    }
+    Alert.alert('Account deleted', 'Your account and personal data have been removed.');
+    await signOut();
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account, profile, saved addresses, favorites and notifications. ' +
+        'Past orders are kept for our records without your name or address. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteAccount },
+      ]
+    );
   };
 
   if (!profile) return null;
@@ -58,6 +81,10 @@ export default function ProfileScreen() {
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+        <Text style={styles.deleteText}>Delete Account</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -168,5 +195,16 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontSize: 16,
     fontFamily: FONTS.bold,
+  },
+  deleteButton: {
+    padding: SPACING.m,
+    alignItems: 'center',
+    marginTop: SPACING.s,
+    marginBottom: SPACING.l,
+  },
+  deleteText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
