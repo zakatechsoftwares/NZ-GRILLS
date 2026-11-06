@@ -1,0 +1,28 @@
+name: Keep Supabase awake
+
+# Free Supabase projects pause after about a week without activity, which
+# takes the app offline. This reads one menu item every 3 days to keep the
+# project active, and fails (GitHub emails you) if the database is down.
+#
+# GitHub disables scheduled workflows in public repos after 60 days with no
+# repository activity; re-enable it from the Actions tab if that happens.
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Query the database
+        run: |
+          set -a; . ./.env; set +a
+          status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+            "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/menu_items?select=id&limit=1" \
+            -H "apikey: $EXPO_PUBLIC_SUPABASE_ANON_KEY")
+          echo "Supabase responded with HTTP $status"
+          test "$status" = "200"
