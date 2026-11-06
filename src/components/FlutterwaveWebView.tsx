@@ -135,7 +135,7 @@ export default function FlutterwaveWebView({
                         phone_number: ${toJsString(customerPhone)}
                     },
                     customizations: {
-                        title: "NZ Grills Order Payment",
+                        title: "Zak Canteen Order Payment",
                         description: "Payment for your order",
                         logo: ""
                     },

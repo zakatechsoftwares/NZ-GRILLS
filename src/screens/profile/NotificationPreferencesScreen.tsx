@@ -35,7 +35,7 @@ export default function NotificationPreferencesScreen() {
         if (!token) {
           Alert.alert(
             'Notifications blocked',
-            'Allow notifications for NZ Grills in your phone settings, then try again.',
+            'Allow notifications for Zak Canteen in your phone settings, then try again.',
             [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -93,7 +93,7 @@ export default function NotificationPreferencesScreen() {
         <View style={[styles.row, styles.lastRow]}>
           <View style={styles.textWrap}>
             <Text style={styles.title}>Promotions & offers</Text>
-            <Text style={styles.description}>Deals and announcements from NZ Grills.</Text>
+            <Text style={styles.description}>Deals and announcements from Zak Canteen.</Text>
           </View>
           <Switch
             value={notifyPromotions}

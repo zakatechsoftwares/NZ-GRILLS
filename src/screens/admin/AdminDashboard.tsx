@@ -60,7 +60,7 @@ export default function AdminDashboard() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello, Admin</Text>
-          <Text style={styles.subtitle}>Manage NZ Grills</Text>
+          <Text style={styles.subtitle}>Manage Zak Canteen</Text>
         </View>
         <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
           <Ionicons name="log-out-outline" size={24} color={COLORS.error} />
