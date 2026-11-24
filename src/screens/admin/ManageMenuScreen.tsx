@@ -131,9 +131,14 @@ export default function ManageMenuScreen() {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Manage Menu</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('EditMenuItem')} style={styles.addButton}>
-          <Ionicons name="add" size={24} color={COLORS.textInverse} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => navigation.navigate('ImportMenu')} style={styles.importButton}>
+            <Ionicons name="cloud-download-outline" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('EditMenuItem')} style={styles.addButton}>
+            <Ionicons name="add" size={24} color={COLORS.textInverse} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
@@ -195,6 +200,20 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: SPACING.s,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.s,
+  },
+  importButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
   },
   addButton: {
     backgroundColor: COLORS.primary,

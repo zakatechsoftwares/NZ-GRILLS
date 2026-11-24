@@ -34,7 +34,8 @@ export default function CheckoutScreen() {
   // Flutterwave also fires "closed" after a successful payment; don't cancel then
   const paymentSucceededRef = useRef(false);
 
-  const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || 'FLWPUBK_TEST-e4bb46908aa02f101fc0420306b1bc17-X';
+  // Set in .env; regenerating keys in Flutterwave replaces this key too
+  const FLUTTERWAVE_PUBLIC_KEY = process.env.EXPO_PUBLIC_FLUTTERWAVE_PUBLIC_KEY ?? '';
 
   // Address picked in the Addresses screen, otherwise the user's default
   const selectedAddressId: string | undefined = route.params?.addressId;
@@ -59,6 +60,10 @@ export default function CheckoutScreen() {
 
   const handleFlutterwaveStart = async () => {
       if (!user || !requireAddress()) return;
+      if (!FLUTTERWAVE_PUBLIC_KEY) {
+        Alert.alert('Card payments unavailable', 'Please choose Cash on Delivery.');
+        return;
+      }
       setLoading(true);
       
       try {

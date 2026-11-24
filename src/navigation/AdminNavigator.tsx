@@ -9,6 +9,7 @@ import OrderAnalyticsScreen from '../screens/admin/OrderAnalyticsScreen';
 import PromotionsScreen from '../screens/admin/PromotionsScreen';
 import ManageStaffScreen from '../screens/admin/ManageStaffScreen';
 import AllOrdersScreen from '../screens/admin/AllOrdersScreen';
+import ImportMenuScreen from '../screens/admin/ImportMenuScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="Promotions" component={PromotionsScreen} />
       <Stack.Screen name="ManageStaff" component={ManageStaffScreen} />
       <Stack.Screen name="AllOrders" component={AllOrdersScreen} />
+      <Stack.Screen name="ImportMenu" component={ImportMenuScreen} />
     </Stack.Navigator>
   );
 }
