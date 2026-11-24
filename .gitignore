@@ -44,3 +44,6 @@ yarn-error.*
 # Firebase / Google Play credentials (provide via EAS secrets)
 google-services.json
 google-service-account*.json
+
+# Google Cloud service account keys (downloaded as <project>-<12 hex>.json)
+*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
