@@ -85,10 +85,13 @@ export default function ManageCategoriesScreen() {
         <Text style={styles.orderText}>#{item.display_order}</Text>
       </View>
 
-      <Image
-        source={{ uri: item.image_url || 'https://via.placeholder.com/150' }}
-        style={styles.image}
-      />
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.image} />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Ionicons name="grid-outline" size={32} color={COLORS.textSecondary} />
+        </View>
+      )}
 
       <View style={styles.details}>
         <Text style={styles.name}>{item.name}</Text>
@@ -289,12 +292,19 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
   },
   actions: {
-    justifyContent: 'space-between',
-    height: 80,
-    paddingLeft: SPACING.s,
+    width: 72,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginLeft: SPACING.s,
   },
   actionBtn: {
-    padding: 4,
+    padding: 6,
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceHighlight,
   },
   actionBtnDisabled: {
     opacity: 0.3,

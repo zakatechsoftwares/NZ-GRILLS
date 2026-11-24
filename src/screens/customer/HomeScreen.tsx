@@ -67,9 +67,13 @@ export default function HomeScreen() {
   const renderCategory = ({ item, index }: { item: Category, index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 100).duration(500)}>
       <TouchableOpacity style={styles.categoryCard} onPress={() => navigation.navigate('Menu')}>
-        <View style={styles.categoryIcon}>
-          <Text style={styles.categoryIconText}>{item.name.charAt(0)}</Text>
-        </View>
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={[styles.categoryIcon, styles.categoryImage]} />
+        ) : (
+          <View style={styles.categoryIcon}>
+            <Text style={styles.categoryIconText}>{item.name.charAt(0)}</Text>
+          </View>
+        )}
         <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -264,6 +268,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.xs,
     ...SHADOWS.light,
+  },
+  categoryImage: {
+    backgroundColor: COLORS.surfaceHighlight,
   },
   categoryIconText: {
     fontSize: 24,

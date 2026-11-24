@@ -4,6 +4,7 @@ import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../../components/ScreenHeader';
 import PremiumCard from '../../components/PremiumCard';
 
 type Notification = {
@@ -84,7 +85,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Notifications</Text>
+      <ScreenHeader title="Notifications" style={styles.header} />
       <FlatList
         data={notifications}
         renderItem={renderItem}
@@ -111,10 +112,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
   },
   header: {
-    ...FONTS.h1,
-    color: COLORS.text,
     paddingHorizontal: SPACING.m,
-    marginBottom: SPACING.m,
   },
   list: {
     padding: SPACING.m,

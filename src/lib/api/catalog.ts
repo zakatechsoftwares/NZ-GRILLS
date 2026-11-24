@@ -62,7 +62,7 @@ export async function importDishes(dishes: { dish: CatalogDish; price: number }[
   for (const { dish } of dishes) {
     const key = dish.category.toLowerCase();
     if (!categoryIds.has(key)) {
-      const created = await createCategory({ name: dish.category });
+      const created = await createCategory({ name: dish.category, image_url: dish.image });
       categoryIds.set(key, created.id);
     }
   }

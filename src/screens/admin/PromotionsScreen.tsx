@@ -6,6 +6,7 @@ import PremiumInput from '../../components/PremiumInput';
 import { supabase } from '../../lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../../components/ScreenHeader';
 
 export default function PromotionsScreen() {
   const [title, setTitle] = useState('');
@@ -112,7 +113,7 @@ export default function PromotionsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Send Promotion</Text>
+      <ScreenHeader title="Send Promotion" style={styles.header} />
       
       <View style={styles.card}>
         <Text style={styles.label}>Title</Text>
@@ -169,10 +170,7 @@ const styles = StyleSheet.create({
     padding: SPACING.m,
   },
   header: {
-    ...FONTS.h1,
-    color: COLORS.text,
-    marginBottom: SPACING.l,
-    marginTop: SPACING.m,
+    marginTop: 34, // with the container's 16px padding, matches other screens' 50px top
   },
   card: {
     backgroundColor: COLORS.surface,

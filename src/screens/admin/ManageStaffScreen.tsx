@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Modal } from
 import { supabase, PROFILE_COLUMNS } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../../components/ScreenHeader';
 import PremiumCard from '../../components/PremiumCard';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
@@ -132,7 +133,7 @@ export default function ManageStaffScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Staff Management</Text>
+      <ScreenHeader title="Staff Management" style={styles.header} />
       
       {/* Search Section */}
       <View style={styles.searchSection}>
@@ -230,10 +231,7 @@ const styles = StyleSheet.create({
     padding: SPACING.m,
   },
   header: {
-    ...FONTS.h1,
-    color: COLORS.text,
-    marginBottom: SPACING.l,
-    marginTop: SPACING.m,
+    marginTop: 34, // with the container's 16px padding, matches other screens' 50px top
   },
   sectionTitle: {
       ...FONTS.h3,

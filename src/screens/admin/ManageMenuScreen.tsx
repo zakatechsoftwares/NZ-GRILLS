@@ -98,7 +98,13 @@ export default function ManageMenuScreen() {
 
   const renderItem = ({ item }: { item: MenuItem }) => (
     <PremiumCard style={styles.card}>
-      <Image source={{ uri: item.image_url || 'https://via.placeholder.com/150' }} style={styles.image} />
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.image} />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Ionicons name="fast-food" size={32} color={COLORS.textSecondary} />
+        </View>
+      )}
       <View style={styles.details}>
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.price}>₦{item.price.toFixed(2)}</Text>
@@ -112,13 +118,13 @@ export default function ManageMenuScreen() {
       </View>
       <View style={styles.actions}>
         <TouchableOpacity onPress={() => navigation.navigate('EditMenuItem', { item })} style={styles.actionBtn}>
-            <Ionicons name="create-outline" size={24} color={COLORS.primary} />
+            <Ionicons name="create-outline" size={20} color={COLORS.primary} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => toggleAvailability(item)} style={styles.actionBtn}>
-            <Ionicons name={item.is_available ? "eye-off-outline" : "eye-outline"} size={24} color={COLORS.warning} />
+            <Ionicons name={item.is_available ? "eye-off-outline" : "eye-outline"} size={20} color={COLORS.warning} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => deleteItem(item)} style={styles.actionBtn}>
-            <Ionicons name="trash-outline" size={24} color={COLORS.error} />
+            <Ionicons name="trash-outline" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </View>
     </PremiumCard>
@@ -293,11 +299,18 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
   },
   actions: {
-    justifyContent: 'space-between',
-    height: 80,
-    paddingLeft: SPACING.s,
+    width: 72,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginLeft: SPACING.s,
   },
   actionBtn: {
-    padding: 4,
+    padding: 6,
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceHighlight,
   },
 });

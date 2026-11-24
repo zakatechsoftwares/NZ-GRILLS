@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../constants/theme';
 
-export default function ScreenHeader({ title }: { title: string }) {
+export default function ScreenHeader({ title, style }: { title: string; style?: StyleProp<ViewStyle> }) {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, style]}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color={COLORS.text} />
       </TouchableOpacity>

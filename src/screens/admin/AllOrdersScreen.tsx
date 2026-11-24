@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, SHADOWS } from '../../constants/theme';
 import { Database } from '../../types/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../../components/ScreenHeader';
 import PremiumCard from '../../components/PremiumCard';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -182,7 +183,7 @@ export default function AllOrdersScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>All Orders</Text>
+      <ScreenHeader title="All Orders" style={styles.header} />
 
       {/* Filter Chips */}
       <View>
@@ -232,10 +233,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
   },
   header: {
-    ...FONTS.h1,
-    color: COLORS.text,
     paddingHorizontal: SPACING.m,
-    marginBottom: SPACING.m,
   },
   filterContainer: {
     flexDirection: 'row',
