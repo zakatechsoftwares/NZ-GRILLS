@@ -1,27 +1,39 @@
 name: Release Android
 
-# Builds a Play Store AAB on EAS and submits it to the internal testing track.
-# Run manually from the Actions tab, or push a tag like v1.0.1.
+# Uploads the app to Google Play. Either:
+#   - submit an existing EAS build (fill in build_id; no new build is used), or
+#   - build a new AAB on EAS and submit it (leave build_id empty, or push a tag
+#     like v1.0.6, which goes to internal testing).
 #
 # Requires:
 #   - GitHub secret EXPO_TOKEN (expo.dev > Account settings > Access tokens)
 #   - Google Play service account key uploaded to EAS:
-#       eas credentials -p android  >  Google Service Account  >  Upload
-#   - The first AAB uploaded to Play Console manually (Google requirement)
+#       eas credentials -p android  >  Google Service Account  >  Play Store submissions
+#
+# Tracks (submit profiles in eas.json): internal goes straight to testers;
+# production arrives as a draft to review and send in Play Console.
 
 on:
   workflow_dispatch:
     inputs:
-      submit:
-        description: Submit to Play internal testing after the build
-        type: boolean
-        default: true
+      track:
+        description: Google Play track
+        type: choice
+        options: [internal, production]
+        default: internal
+      build_id:
+        description: Existing EAS build ID to submit (leave empty to build a new one)
+        type: string
+        required: false
   push:
     tags: ['v*']
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    env:
+      TRACK: ${{ inputs.track || 'internal' }}
+      BUILD_ID: ${{ inputs.build_id }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,13 +49,14 @@ jobs:
 
       - run: npm ci
 
+      - name: Submit existing build
+        if: env.BUILD_ID != ''
+        run: eas submit --platform android --profile "$TRACK" --id "$BUILD_ID" --non-interactive
+
       - name: Type-check
+        if: env.BUILD_ID == ''
         run: npx tsc --noEmit
 
-      - name: Build AAB (and submit to internal testing)
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.submit }}" = "true" ]; then
-            eas build --platform android --profile production --non-interactive --no-wait --auto-submit
-          else
-            eas build --platform android --profile production --non-interactive --no-wait
-          fi
+      - name: Build AAB and submit
+        if: env.BUILD_ID == ''
+        run: eas build --platform android --profile production --non-interactive --no-wait --auto-submit-with-profile "$TRACK"
