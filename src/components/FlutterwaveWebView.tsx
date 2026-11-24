@@ -128,7 +128,7 @@ export default function FlutterwaveWebView({
                     tx_ref: ${toJsString(txRef)},
                     amount: ${amount},
                     currency: ${toJsString(currency)},
-                    payment_options: "card,ussd,banktransfer",
+                    payment_options: "card",
                     customer: {
                         email: ${toJsString(customerEmail)},
                         name: ${toJsString(customerName)},

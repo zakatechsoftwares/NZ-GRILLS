@@ -8,12 +8,15 @@ import { Database } from '../../types/supabase';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumCard from '../../components/PremiumCard';
 import { toggleFavorite, getFavorites } from '../../lib/api/engagement';
+import { useCart } from '../../lib/CartContext';
+import CartIconButton from '../../components/CartIconButton';
 
 type Category = Database['public']['Tables']['categories']['Row'];
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
 export default function MenuScreen() {
   const navigation = useNavigation<any>();
+  const { addToCart } = useCart();
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<MenuItem[]>([]);
@@ -135,7 +138,7 @@ export default function MenuScreen() {
             style={styles.actionButton}
             onPress={(e) => {
                e.stopPropagation();
-               // logic to add to cart
+               addToCart(item, 1);
             }}
           >
             <Ionicons name="add" size={20} color={COLORS.textInverse} />
@@ -158,9 +161,7 @@ export default function MenuScreen() {
           <TouchableOpacity onPress={() => navigation.navigate('Favorites')} style={styles.headerButton}>
             <Ionicons name="heart-outline" size={24} color={COLORS.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.headerButton}>
-            <Ionicons name="cart-outline" size={24} color={COLORS.text} />
-          </TouchableOpacity>
+          <CartIconButton style={styles.headerButton} />
         </View>
       </View>
 

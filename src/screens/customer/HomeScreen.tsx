@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
@@ -11,12 +11,15 @@ import Skeleton from '../../components/Skeleton';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAuth } from '../../lib/AuthContext';
+import { useCart } from '../../lib/CartContext';
+import CartIconButton from '../../components/CartIconButton';
 
 type Category = Database['public']['Tables']['categories']['Row'];
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const { addToCart } = useCart();
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredItems, setFeaturedItems] = useState<MenuItem[]>([]);
@@ -76,14 +79,18 @@ export default function HomeScreen() {
     <Animated.View entering={FadeInDown.delay(index * 150 + 300).duration(500)}>
       <TouchableOpacity onPress={() => navigation.navigate('ItemDetail', { item })}>
         <PremiumCard style={styles.itemCard}>
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="fast-food" size={40} color={COLORS.textSecondary} /> 
-          </View>
+          {item.image_url ? (
+            <Image source={{ uri: item.image_url }} style={styles.imagePlaceholder} />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="fast-food" size={40} color={COLORS.textSecondary} />
+            </View>
+          )}
           <View style={styles.itemInfo}>
             <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
             <Text style={styles.itemPrice}>₦{item.price.toFixed(2)}</Text>
           </View>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item, 1)}>
              <Ionicons name="add" size={20} color={COLORS.textInverse} />
           </TouchableOpacity>
         </PremiumCard>
@@ -139,9 +146,7 @@ export default function HomeScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
-            <Ionicons name="cart-outline" size={24} color={COLORS.text} />
-          </TouchableOpacity>
+          <CartIconButton style={styles.cartButton} />
         </View>
       </View>
 
