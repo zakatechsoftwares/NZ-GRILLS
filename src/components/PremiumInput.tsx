@@ -52,10 +52,10 @@ export default function PremiumInput({
   return (
     <View style={[styles.wrapper, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <Animated.View style={[styles.container, animatedContainerStyle]}>
+      <Animated.View style={[styles.container, props.multiline && styles.containerMultiline, animatedContainerStyle]}>
         {icon && <View style={styles.iconLeft}>{icon}</View>}
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, props.multiline && styles.inputMultiline, style]}
           placeholderTextColor={COLORS.textLight}
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -87,6 +87,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingHorizontal: SPACING.m, // Increased padding
   },
+  // Multi-line fields grow from 5 lines instead of the single-line fixed height
+  containerMultiline: {
+    height: undefined,
+    minHeight: 130,
+    alignItems: 'flex-start',
+    paddingVertical: SPACING.s,
+  },
   input: {
     flex: 1,
     height: '100%',
@@ -95,6 +102,12 @@ const styles = StyleSheet.create({
     fontFamily: 'System', // Standard font
     paddingHorizontal: SPACING.s,
     marginTop: Platform.OS === 'android' ? 2 : 0, // Better vertical align on Android
+  },
+  inputMultiline: {
+    height: undefined,
+    minHeight: 112,
+    marginTop: 0,
+    textAlignVertical: 'top',
   },
   iconLeft: {
     marginRight: SPACING.s, // Use margin for clear separation
