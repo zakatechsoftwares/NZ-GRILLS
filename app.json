@@ -23,7 +23,9 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.nzgrills.app",
-      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -32,12 +34,23 @@
     },
     "plugins": [
       "expo-web-browser",
-      ["expo-image-picker", { "microphonePermission": false }]
+      [
+        "expo-image-picker",
+        {
+          "microphonePermission": false
+        }
+      ]
     ],
     "extra": {
       "eas": {
         "projectId": "89f0b1db-130b-4196-8cc4-eda83b2d0526"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/89f0b1db-130b-4196-8cc4-eda83b2d0526"
     }
   }
 }

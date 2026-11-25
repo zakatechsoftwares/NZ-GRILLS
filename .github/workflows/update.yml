@@ -1,0 +1,45 @@
+name: Publish Update
+
+# Sends JavaScript/asset changes to installed apps over the air (EAS Update),
+# without a new build or Play Store upload. Phones download it in the
+# background and apply it the next time the app is opened.
+#
+# Updates only reach builds with the same app version (runtimeVersion policy
+# "appVersion" in app.json). So:
+#   - JS/screen/style fixes: run this workflow; do NOT bump the version.
+#   - Native changes (permissions, icons, app.json android config, packages
+#     with native code, Firebase): bump the version and run Release Android.
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: What changed (shown in the EAS dashboard)
+        type: string
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Publish update to production builds
+        env:
+          MESSAGE: ${{ inputs.message }}
+        run: eas update --channel production --environment production --platform android --message "$MESSAGE" --non-interactive
