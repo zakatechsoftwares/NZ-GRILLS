@@ -5,6 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS } from '../../constants/theme';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
+
+// Shows whether this phone runs the code shipped in the build or an over-the-air update
+const versionLabel = `Version ${Constants.expoConfig?.version ?? ''} · ${
+  Updates.isEmbeddedLaunch || !Updates.updateId ? 'built-in' : `update ${Updates.updateId.slice(0, 8)}`
+}`;
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -86,6 +93,8 @@ export default function ProfileScreen() {
       <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
         <Text style={styles.deleteText}>Delete Account</Text>
       </TouchableOpacity>
+
+      <Text style={styles.versionText}>{versionLabel}</Text>
     </ScrollView>
   );
 }
@@ -206,5 +215,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  versionText: {
+    textAlign: 'center',
+    color: COLORS.textLight,
+    fontSize: 12,
+    marginBottom: SPACING.l,
   },
 });
