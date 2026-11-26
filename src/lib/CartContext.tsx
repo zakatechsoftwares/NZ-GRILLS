@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '../types/supabase';
 import { useAuth } from './AuthContext';
+import { supabase } from './supabase';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
@@ -32,14 +34,61 @@ const CartContext = createContext<CartContextType>({
 
 export const useCart = () => useContext(CartContext);
 
+const cartKey = (userId: string) => `cart:${userId}`;
+
+// A saved cart may be days old: take current names, prices and photos from the
+// menu, and drop dishes that were removed or made unavailable
+async function refreshFromMenu(saved: CartItem[]): Promise<CartItem[]> {
+  if (saved.length === 0) return saved;
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .in('id', saved.map(item => item.id))
+    .eq('is_available', true);
+  if (error) return saved;
+  const current = new Map((data as MenuItem[]).map(item => [item.id, item]));
+  return saved
+    .filter(item => current.has(item.id))
+    .map(item => ({ ...current.get(item.id)!, quantity: item.quantity, instructions: item.instructions }));
+}
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  // Which account's saved cart is loaded; nothing is saved until it is
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
-  // The cart belongs to whoever is signed in; start empty when the account changes
+  // Each account has its own saved cart; switch to it when the account changes
   useEffect(() => {
     setItems([]);
-  }, [user?.id]);
+    setLoadedFor(null);
+    if (!userId) return;
+
+    let cancelled = false;
+    (async () => {
+      let saved: CartItem[] = [];
+      try {
+        const raw = await AsyncStorage.getItem(cartKey(userId));
+        saved = raw ? JSON.parse(raw) : [];
+      } catch {
+        saved = [];
+      }
+      const refreshed = await refreshFromMenu(saved).catch(() => saved);
+      if (cancelled) return;
+      setItems(refreshed);
+      setLoadedFor(userId);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || loadedFor !== userId) return;
+    AsyncStorage.setItem(cartKey(userId), JSON.stringify(items)).catch(() => {});
+  }, [items, userId, loadedFor]);
 
   const addToCart = (item: MenuItem, quantity: number, instructions?: string) => {
     setItems((prevItems) => {
