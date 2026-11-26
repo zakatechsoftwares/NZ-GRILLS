@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
-import { useCart } from '../../lib/CartContext';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS } from '../../constants/theme';
 import Constants from 'expo-constants';
@@ -17,7 +16,6 @@ const versionLabel = `Version ${Constants.expoConfig?.version ?? ''} · ${
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { profile, signOut } = useAuth();
-  const { clearCart } = useCart();
 
   const handleSignOut = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -32,7 +30,6 @@ export default function ProfileScreen() {
       Alert.alert('Could not delete account', error.message);
       return;
     }
-    clearCart();
     Alert.alert('Account deleted', 'Your account and personal data have been removed.');
     await signOut();
   };

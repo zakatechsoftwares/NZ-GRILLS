@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '../types/supabase';
 import { useAuth } from './AuthContext';
 import { supabase } from './supabase';
@@ -34,60 +33,88 @@ const CartContext = createContext<CartContextType>({
 
 export const useCart = () => useContext(CartContext);
 
-const cartKey = (userId: string) => `cart:${userId}`;
-
-// A saved cart may be days old: take current names, prices and photos from the
-// menu, and drop dishes that were removed or made unavailable
-async function refreshFromMenu(saved: CartItem[]): Promise<CartItem[]> {
-  if (saved.length === 0) return saved;
+// Cart lines are stored in cart_items; the join returns current names, prices
+// and photos, and dishes that are no longer available are dropped
+async function loadCart(userId: string): Promise<CartItem[]> {
   const { data, error } = await supabase
-    .from('menu_items')
-    .select('*')
-    .in('id', saved.map(item => item.id))
-    .eq('is_available', true);
-  if (error) return saved;
-  const current = new Map((data as MenuItem[]).map(item => [item.id, item]));
-  return saved
-    .filter(item => current.has(item.id))
-    .map(item => ({ ...current.get(item.id)!, quantity: item.quantity, instructions: item.instructions }));
+    .from('cart_items')
+    .select('quantity, instructions, menu_items(*)')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return (data as any[])
+    .filter(row => row.menu_items?.is_available)
+    .map(row => ({ ...row.menu_items, quantity: row.quantity, instructions: row.instructions ?? undefined }));
 }
+
+async function saveCart(userId: string, items: CartItem[]) {
+  if (items.length > 0) {
+    const { error } = await supabase.from('cart_items').upsert(
+      items.map(item => ({
+        user_id: userId,
+        menu_item_id: item.id,
+        quantity: item.quantity,
+        instructions: item.instructions ?? null,
+        updated_at: new Date().toISOString(),
+      }))
+    );
+    if (error) throw error;
+  }
+
+  let remove = supabase.from('cart_items').delete().eq('user_id', userId);
+  if (items.length > 0) remove = remove.not('menu_item_id', 'in', `(${items.map(i => i.id).join(',')})`);
+  const { error } = await remove;
+  if (error) throw error;
+}
+
+const snapshot = (items: CartItem[]) =>
+  JSON.stringify(items.map(i => [i.id, i.quantity, i.instructions ?? null]));
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
-  // Which account's saved cart is loaded; nothing is saved until it is
+  // Which account's cart is loaded; nothing is saved until it is, so a failed
+  // load (e.g. offline) can't overwrite the stored cart with an empty one
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const lastSaved = useRef<string>('');
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  // Each account has its own saved cart; switch to it when the account changes
+  // Each account has its own cart in the database; switch to it when the account changes
   useEffect(() => {
     setItems([]);
     setLoadedFor(null);
     if (!userId) return;
 
     let cancelled = false;
-    (async () => {
-      let saved: CartItem[] = [];
-      try {
-        const raw = await AsyncStorage.getItem(cartKey(userId));
-        saved = raw ? JSON.parse(raw) : [];
-      } catch {
-        saved = [];
-      }
-      const refreshed = await refreshFromMenu(saved).catch(() => saved);
-      if (cancelled) return;
-      setItems(refreshed);
-      setLoadedFor(userId);
-    })();
+    loadCart(userId)
+      .then(loaded => {
+        if (cancelled) return;
+        lastSaved.current = snapshot(loaded);
+        setItems(loaded);
+        setLoadedFor(userId);
+      })
+      .catch(error => console.log('Failed to load cart', error));
 
     return () => {
       cancelled = true;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [userId]);
 
+  // Save changes shortly after the last edit
   useEffect(() => {
     if (!userId || loadedFor !== userId) return;
-    AsyncStorage.setItem(cartKey(userId), JSON.stringify(items)).catch(() => {});
+    const current = snapshot(items);
+    if (current === lastSaved.current) return;
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveCart(userId, items)
+        .then(() => {
+          lastSaved.current = current;
+        })
+        .catch(error => console.log('Failed to save cart', error));
+    }, 500);
   }, [items, userId, loadedFor]);
 
   const addToCart = (item: MenuItem, quantity: number, instructions?: string) => {
