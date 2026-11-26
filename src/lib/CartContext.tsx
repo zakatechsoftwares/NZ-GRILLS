@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { Database } from '../types/supabase';
+import { useAuth } from './AuthContext';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
 
@@ -33,6 +34,12 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
+
+  // The cart belongs to whoever is signed in; start empty when the account changes
+  useEffect(() => {
+    setItems([]);
+  }, [user?.id]);
 
   const addToCart = (item: MenuItem, quantity: number, instructions?: string) => {
     setItems((prevItems) => {
