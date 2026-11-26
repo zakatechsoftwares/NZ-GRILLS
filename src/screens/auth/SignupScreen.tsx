@@ -31,8 +31,9 @@ export default function SignupScreen() {
     setLoading(true);
     
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const { data: { session, user }, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           data: {
@@ -45,7 +46,28 @@ export default function SignupScreen() {
       if (signUpError) throw signUpError;
       if (!user) throw new Error("No user created");
 
-      Alert.alert('Success', 'Account created successfully!');
+      // Supabase doesn't reveal existing accounts: it returns a user with no
+      // identities and saves nothing, so the new password would not work
+      if (user.identities?.length === 0) {
+        Alert.alert(
+          'Account already exists',
+          'This email is already registered. Sign in instead, or use Continue with Google if you signed up with Google.',
+          [{ text: 'Go to Sign In', onPress: () => navigation.goBack() }]
+        );
+        return;
+      }
+
+      if (!session) {
+        Alert.alert(
+          'Confirm your email',
+          `We sent a confirmation link to ${cleanEmail}. Open it, then sign in.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+        return;
+      }
+
+      // Signed in straight away; the app switches to the home screen
+      Alert.alert('Welcome', 'Your account has been created.');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

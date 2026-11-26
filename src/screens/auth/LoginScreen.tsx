@@ -22,14 +22,18 @@ export default function LoginScreen() {
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
     if (error) {
-      Alert.alert('Error', error.message);
+      const message = /not confirmed/i.test(error.message)
+        ? 'Please confirm your email first using the link we sent you.'
+        : /invalid login credentials/i.test(error.message)
+          ? 'Wrong email or password. If you signed up with Google, use Continue with Google.'
+          : error.message;
+      Alert.alert('Sign in failed', message);
     }
-    setLoading(false);
     setLoading(false);
   }
 
