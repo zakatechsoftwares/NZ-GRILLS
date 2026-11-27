@@ -16,15 +16,16 @@ export default function TrackDeliveryScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { orderId } = route.params;
-  
+
   const [order, setOrder] = useState<Order | null>(null);
   const [courierLocation, setCourierLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null);
+  const [courier, setCourier] = useState<{ full_name: string | null; phone: string | null } | null>(null);
 
   useEffect(() => {
     fetchOrder();
-    
+
     // Subscribe to real-time location updates
     const subscription = supabase
       .channel(`order-${orderId}`)
@@ -39,7 +40,8 @@ export default function TrackDeliveryScreen() {
         (payload) => {
           const updatedOrder = payload.new as Order;
           setOrder(updatedOrder);
-          
+          if (updatedOrder.courier_id) fetchCourier();
+
           // Update courier location if available
           if (updatedOrder.courier_latitude && updatedOrder.courier_longitude) {
             const newLocation = {
@@ -47,7 +49,7 @@ export default function TrackDeliveryScreen() {
               longitude: updatedOrder.courier_longitude as number,
             };
             setCourierLocation(newLocation);
-            
+
             // Calculate distance and ETA
             const deliveryAddr = updatedOrder.delivery_address as any;
             if (deliveryAddr?.latitude && deliveryAddr?.longitude) {
@@ -70,16 +72,26 @@ export default function TrackDeliveryScreen() {
     };
   }, [orderId]);
 
+  const fetchCourier = async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('courier:profiles!orders_courier_id_fkey(full_name, phone)')
+      .eq('id', orderId)
+      .single();
+    setCourier((data as any)?.courier ?? null);
+  };
+
   const fetchOrder = async () => {
     const { data } = await supabase
       .from('orders')
       .select('*')
       .eq('id', orderId)
       .single();
-    
+    fetchCourier();
+
     if (data) {
       setOrder(data);
-      
+
       // Set initial courier location if available
       if (data.courier_latitude && data.courier_longitude) {
         setCourierLocation({
@@ -91,9 +103,15 @@ export default function TrackDeliveryScreen() {
   };
 
   const handleCallCourier = () => {
-    // In a real app, you'd fetch courier phone number
-    Linking.openURL('tel:+2348012345678');
+    if (courier?.phone) Linking.openURL(`tel:${courier.phone}`);
   };
+
+  const callButton = courier?.phone && order?.status === 'out_for_delivery' ? (
+    <TouchableOpacity style={styles.callBtn} onPress={handleCallCourier}>
+      <Ionicons name="call" size={20} color={COLORS.surface} />
+      <Text style={styles.callText}>Call {courier.full_name?.split(' ')[0] || 'Courier'}</Text>
+    </TouchableOpacity>
+  ) : null;
 
   if (!order) {
     return (
@@ -124,8 +142,8 @@ export default function TrackDeliveryScreen() {
 
       {/* Map */}
       {MAPS_ENABLED ? (
-        <MapView 
-          style={styles.map} 
+        <MapView
+          style={styles.map}
           initialRegion={region}
           provider={PROVIDER_GOOGLE}
         >
@@ -142,7 +160,7 @@ export default function TrackDeliveryScreen() {
               <Ionicons name="home" size={24} color={COLORS.surface} />
             </View>
           </Marker>
-        
+
           {/* Courier Location */}
           {courierLocation && (
             <Marker
@@ -150,7 +168,7 @@ export default function TrackDeliveryScreen() {
               title="Courier"
               pinColor={COLORS.primary}
             >
-              <Animated.View 
+              <Animated.View
                 entering={FadeInDown}
                 style={styles.courierMarker}
               >
@@ -179,9 +197,9 @@ export default function TrackDeliveryScreen() {
                   {distance ? formatDistance(distance) : '---'}
                 </Text>
               </View>
-              
+
               <View style={styles.divider} />
-              
+
               <View style={styles.statusItem}>
                 <Ionicons name="time" size={32} color={COLORS.success} />
                 <Text style={styles.statusLabel}>ETA</Text>
@@ -191,16 +209,19 @@ export default function TrackDeliveryScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.callBtn} onPress={handleCallCourier}>
-              <Ionicons name="call" size={20} color={COLORS.surface} />
-              <Text style={styles.callText}>Call Courier</Text>
-            </TouchableOpacity>
+            {callButton}
           </>
+        ) : order.status === 'delivered' ? (
+          <View style={styles.waitingContainer}>
+            <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+            <Text style={styles.waitingText}>Delivered. Enjoy your meal!</Text>
+          </View>
         ) : (
           <View style={styles.waitingContainer}>
-            <Ionicons name="hourglass-outline" size={48} color={COLORS.textSecondary} />
-            <Text style={styles.waitingText}>Waiting for courier to start delivery...</Text>
-            <Text style={styles.waitingSubtext}>You'll see live tracking once they're on the way</Text>
+            <Ionicons name="bicycle-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.waitingText}>Your order is on the way</Text>
+            <Text style={styles.waitingSubtext}>The courier's live location will show here when it is shared</Text>
+            {callButton}
           </View>
         )}
       </View>

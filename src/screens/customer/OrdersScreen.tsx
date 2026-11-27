@@ -34,7 +34,7 @@ export default function OrdersScreen() {
         .select('*, order_items(count)')
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
@@ -52,12 +52,12 @@ export default function OrdersScreen() {
     const subscription = supabase
       .channel('customer-orders')
       .on(
-        'postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'orders',
-          filter: `customer_id=eq.${user?.id}` 
+          filter: `customer_id=eq.${user?.id}`
         },
         payload => {
           console.log('Order update received:', payload);
@@ -76,10 +76,10 @@ export default function OrdersScreen() {
 
   const handleSubmitReview = async (rating: number, comment: string) => {
     if (!ratingOrderId) return;
-    
+
     // Optimistic / UI feedback
     const { success, error } = await submitReview(ratingOrderId, rating, comment);
-    
+
     if (success) {
       Alert.alert('Thank You', 'Your review has been submitted.');
     } else {
@@ -121,6 +121,14 @@ export default function OrdersScreen() {
     }
   };
 
+  // Card orders are created before payment; if the customer never finished
+  // paying, say so instead of showing them as waiting for the kitchen.
+  const awaitingPayment = (order: Order) =>
+    order.status === 'pending' && order.payment_method === 'card' && order.payment_status !== 'paid';
+
+  const statusLabel = (order: Order) =>
+    awaitingPayment(order) ? 'PAYMENT NOT COMPLETED' : (order.status ?? '').replace(/_/g, ' ').toUpperCase();
+
   const renderItem = ({ item, index }: { item: Order; index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 100).duration(500)} layout={Layout.springify()}>
       <PremiumCard style={styles.card}>
@@ -130,7 +138,7 @@ export default function OrdersScreen() {
           </Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
             <Ionicons name={getStatusIcon(item.status)} size={12} color={getStatusColor(item.status)} style={{ marginRight: 4 }} />
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{(item.status ?? '').toUpperCase()}</Text>
+            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{statusLabel(item)}</Text>
           </View>
         </View>
 
@@ -140,7 +148,7 @@ export default function OrdersScreen() {
         </View>
 
         {/* Progress Bar */}
-        {['pending', 'preparing', 'ready', 'out_for_delivery'].includes(item.status ?? '') && (
+        {['pending', 'preparing', 'ready', 'out_for_delivery'].includes(item.status ?? '') && !awaitingPayment(item) && (
           <View style={styles.progressContainer}>
             <View style={[styles.progressBar, { width: `${getProgress(item.status) * 100}%`, backgroundColor: getStatusColor(item.status) }]} />
           </View>

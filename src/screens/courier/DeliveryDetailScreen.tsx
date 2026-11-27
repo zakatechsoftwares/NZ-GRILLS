@@ -18,6 +18,7 @@ import {
 import MapPlaceholder from '../../components/MapPlaceholder';
 import { useAuth } from '../../lib/AuthContext';
 import { sendOrderNotification } from '../../lib/notifications';
+import { confirmCourierPickup } from '../../lib/api/courier-offers';
 
 type Order = Database['public']['Tables']['orders']['Row'];
 
@@ -38,7 +39,12 @@ export default function DeliveryDetailScreen() {
   
   const stopTracking = useRef<(() => void) | null>(null);
   const swipeAnimation = useRef(new Animated.Value(0)).current;
-  
+  // The swipe handler is created once, so it reads the latest order and
+  // completeDelivery through refs instead of the first render's values.
+  const orderRef = useRef<Order | null>(null);
+  orderRef.current = order;
+  const completeDeliveryRef = useRef<() => void>(() => {});
+
   // Swipe gesture handler
   const panResponder = useRef(
     PanResponder.create({
@@ -57,7 +63,7 @@ export default function DeliveryDetailScreen() {
             duration: 200,
             useNativeDriver: true,
           }).start(() => {
-            completeDelivery();
+            completeDeliveryRef.current();
           });
         } else {
           // Swipe not far enough - reset
@@ -87,92 +93,116 @@ export default function DeliveryDetailScreen() {
       .eq('id', orderId)
       .single();
     setOrder(data);
+    // Already on the way (started earlier, or marked by the kitchen): carry on
+    // tracking and show the swipe to complete, without changing the status.
+    if (data?.status === 'out_for_delivery') {
+      beginTracking(data);
+    }
+  };
+
+  // Live location for the customer's tracking screen. Optional: without
+  // location access the delivery can still be completed.
+  const beginTracking = async (current: Order) => {
+    setIsTracking(true);
+    if (stopTracking.current) return;
+
+    const location = await getCurrentLocation();
+    if (!location) return;
+
+    setCourierLocation(location);
+    stopTracking.current = startLocationTracking(orderId, 10000); // every 10 seconds
+
+    const addr = current.delivery_address as any;
+    if (addr?.latitude && addr?.longitude) {
+      const dist = calculateDistance(location.latitude, location.longitude, addr.latitude, addr.longitude);
+      setDistance(dist);
+      setEta(calculateETA(dist));
+    }
+  };
+
+  const confirmPickup = async () => {
+    if (!user) return;
+    const { success } = await confirmCourierPickup(orderId, user.id);
+    if (success) {
+      fetchOrder();
+    } else {
+      Alert.alert('Error', 'Failed to confirm pickup');
+    }
   };
 
   const startDelivery = async () => {
-    const location = await getCurrentLocation();
-    if (!location) {
-      Alert.alert('Error', 'Unable to get your location. Please enable location services.');
-      return;
-    }
+    if (!order) return;
 
-    // Update order status to out_for_delivery
-    const { error } = await supabase
+    // Only move it on if it is still waiting; the kitchen may already have
+    // marked it out for delivery.
+    const { data: changed, error } = await supabase
       .from('orders')
       .update({ status: 'out_for_delivery' })
-      .eq('id', orderId);
+      .eq('id', orderId)
+      .eq('status', 'ready')
+      .select('id');
 
     if (error) {
       Alert.alert('Error', 'Failed to start delivery');
       return;
     }
 
-    // Notify customer
-    if (order?.customer_id) {
+    if (changed?.length && order.customer_id) {
       await sendOrderNotification(
-        order.customer_id, 
-        orderId, 
-        'out_for_delivery', 
+        order.customer_id,
+        orderId,
+        'out_for_delivery',
         orderId.slice(0, 6).toUpperCase()
       );
     }
 
-    setIsTracking(true);
-    setCourierLocation(location);
-
-    // Start GPS tracking
-    const cleanup = startLocationTracking(orderId, 10000); // Update every 10 seconds
-    stopTracking.current = cleanup;
-
-    // Calculate initial distance and ETA
-    if (order?.delivery_address) {
-      const addr = order.delivery_address as any;
-      if (addr.latitude && addr.longitude) {
-        const dist = calculateDistance(
-          location.latitude,
-          location.longitude,
-          addr.latitude,
-          addr.longitude
-        );
-        setDistance(dist);
-        setEta(calculateETA(dist));
-      }
-    }
+    const updated = { ...order, status: 'out_for_delivery' };
+    setOrder(updated);
+    beginTracking(updated);
   };
 
   const completeDelivery = async () => {
+    const current = orderRef.current;
     if (stopTracking.current) {
       stopTracking.current();
+      stopTracking.current = null;
     }
 
-    const { error } = await supabase
+    const { data: changed, error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'delivered',
         courier_latitude: null,
         courier_longitude: null,
         location_updated_at: null
       })
-      .eq('id', orderId);
+      .eq('id', orderId)
+      .eq('status', 'out_for_delivery')
+      .select('id');
 
-    if (!error) {
-      Alert.alert('Success', 'Delivery Completed!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
-      
-      // Notify customer
-      if (order?.customer_id) {
-        await sendOrderNotification(
-          order.customer_id, 
-          orderId, 
-          'delivered', 
-          orderId.slice(0, 6).toUpperCase()
-        );
-      }
-    } else {
-      Alert.alert('Error', 'Failed to complete delivery');
+    if (error || !changed?.length) {
+      // Put the swipe button back so the courier can try again
+      Animated.spring(swipeAnimation, { toValue: 0, useNativeDriver: true }).start();
+      Alert.alert('Error', 'Failed to complete delivery. Please try again.');
+      fetchOrder();
+      return;
+    }
+
+    if (current) setOrder({ ...current, status: 'delivered' });
+    Alert.alert('Success', 'Delivery Completed!', [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
+
+    if (current?.customer_id) {
+      await sendOrderNotification(
+        current.customer_id,
+        orderId,
+        'delivered',
+        orderId.slice(0, 6).toUpperCase()
+      );
     }
   };
+  completeDeliveryRef.current = completeDelivery;
 
   const handleOpenMaps = () => {
     openDeliveryAddressInMaps(order?.delivery_address as any, 'Delivery Location');
@@ -280,6 +310,17 @@ export default function DeliveryDetailScreen() {
               <Text style={styles.cancelText}>Back to Dashboard</Text>
             </TouchableOpacity>
           </View>
+        ) : !isTracking && !order.courier_accepted_at ? (
+          <>
+            <TouchableOpacity style={styles.startBtn} onPress={confirmPickup}>
+              <Ionicons name="bag-check" size={24} color={COLORS.surface} />
+              <Text style={styles.startText}>Confirm Pickup</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.cancelText}>Go Back</Text>
+            </TouchableOpacity>
+          </>
         ) : !isTracking ? (
           <>
             <TouchableOpacity style={styles.startBtn} onPress={startDelivery}>

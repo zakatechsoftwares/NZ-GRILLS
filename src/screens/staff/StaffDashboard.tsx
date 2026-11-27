@@ -34,7 +34,7 @@ export default function StaffDashboard() {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week'>('all');
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  
+
   // Courier assignment state
   const [courierModalVisible, setCourierModalVisible] = useState(false);
   const [selectedOrderForCourier, setSelectedOrderForCourier] = useState<Order | null>(null);
@@ -56,8 +56,10 @@ export default function StaffDashboard() {
           profiles!orders_customer_id_fkey (full_name, email, phone)
         `)
         .in('status', ['pending', 'preparing', 'ready', 'out_for_delivery', 'delivered'])
+        // Card orders exist before the customer pays; only show them once paid
+        .or('payment_method.eq.cash,payment_status.eq.paid')
         .order('created_at', { ascending: true });
-      
+
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
@@ -74,9 +76,9 @@ export default function StaffDashboard() {
     const subscription = supabase
       .channel('staff-orders')
       .on(
-        'postgres_changes', 
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        () => fetchOrders() 
+        () => fetchOrders()
       )
       .subscribe();
 
@@ -88,12 +90,12 @@ export default function StaffDashboard() {
     if (currentStatus === 'pending') newStatus = 'preparing';
     else if (currentStatus === 'preparing') newStatus = 'ready';
     else if (currentStatus === 'ready') newStatus = 'out_for_delivery';
-    
+
     if (!newStatus) return;
 
     // Optimistically update local state for instant UI feedback
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
         order.id === orderId ? { ...order, status: newStatus as any } : order
       )
     );
@@ -104,20 +106,27 @@ export default function StaffDashboard() {
         updates.completed_by = user.id;
       }
 
-      const { error } = await supabase
+      const { data: changed, error } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', orderId);
-      
+        .eq('id', orderId)
+        .eq('status', currentStatus)
+        .select('id');
+
       if (error) throw error;
-      
+      if (!changed?.length) {
+        // Someone else already moved this order on
+        fetchOrders();
+        return;
+      }
+
       // Send push notification to customer
       const order = orders.find(o => o.id === orderId);
       if (order && order.customer_id) {
         sendOrderNotification(
-          order.customer_id, 
-          order.id, 
-          newStatus, 
+          order.customer_id,
+          order.id,
+          newStatus,
           order.id.slice(0, 6).toUpperCase()
         );
       }
@@ -150,16 +159,16 @@ export default function StaffDashboard() {
     if (dateFilter === 'all') return true;
     const orderDate = new Date(createdAt);
     const now = new Date();
-    
+
     if (dateFilter === 'today') {
       return orderDate.toDateString() === now.toDateString();
     }
-    
+
     if (dateFilter === 'week') {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return orderDate >= weekAgo;
     }
-    
+
     return true;
   };
 
@@ -181,43 +190,76 @@ export default function StaffDashboard() {
     }
   };
 
+  // Each bulk action only moves orders on by one step, like the card buttons
+  const BULK_FROM: Record<string, string> = {
+    preparing: 'pending',
+    ready: 'preparing',
+    out_for_delivery: 'ready',
+  };
+
   const handleBulkStatusUpdate = async (newStatus: string) => {
     if (selectedOrders.size === 0) return;
 
+    const eligible = orders.filter(o =>
+      selectedOrders.has(o.id) &&
+      o.status === BULK_FROM[newStatus] &&
+      // Out for delivery needs a courier who has picked the order up
+      (newStatus !== 'out_for_delivery' || (!!o.courier_id && !!o.courier_accepted_at))
+    );
+    const skipped = selectedOrders.size - eligible.length;
+    const label = newStatus.replace(/_/g, ' ');
+
+    if (eligible.length === 0) {
+      Alert.alert(
+        'Nothing to update',
+        newStatus === 'out_for_delivery'
+          ? 'None of the selected orders are ready with a courier who has picked them up.'
+          : `None of the selected orders are ${BULK_FROM[newStatus]}.`
+      );
+      return;
+    }
+
     Alert.alert(
       'Bulk Update',
-      `Update ${selectedOrders.size} order(s) to ${newStatus}?`,
+      `Move ${eligible.length} order(s) to ${label}?` +
+        (skipped ? `\n\n${skipped} selected order(s) are at a different stage and will be skipped.` : ''),
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Update',
           onPress: async () => {
-            try {
-              const updates = Array.from(selectedOrders).map(orderId =>
-                supabase.from('orders').update({ status: newStatus } as any).eq('id', orderId)
-              );
-              
-              await Promise.all(updates);
-              
-              // Send notifications
-              Array.from(selectedOrders).forEach(orderId => {
-                const order = orders.find(o => o.id === orderId);
-                if (order?.customer_id) {
-                  sendOrderNotification(
-                    order.customer_id,
-                    order.id,
-                    newStatus,
-                    order.id.slice(0, 6).toUpperCase()
-                  );
-                }
-              });
-              
-              setSelectedOrders(new Set());
-              setBulkMode(false);
-              fetchOrders();
-              Alert.alert('Success', `${selectedOrders.size} order(s) updated`);
-            } catch (error: any) {
-              Alert.alert('Error', error.message);
+            const updates: any = { status: newStatus };
+            if (newStatus === 'ready' && user) updates.completed_by = user.id;
+
+            const results = await Promise.all(eligible.map(order =>
+              supabase
+                .from('orders')
+                .update(updates)
+                .eq('id', order.id)
+                .eq('status', order.status!)
+                .select('id')
+            ));
+            const updated = eligible.filter((_, i) => !results[i].error && results[i].data?.length);
+            const failed = eligible.length - updated.length;
+
+            updated.forEach(order => {
+              if (order.customer_id) {
+                sendOrderNotification(
+                  order.customer_id,
+                  order.id,
+                  newStatus,
+                  order.id.slice(0, 6).toUpperCase()
+                );
+              }
+            });
+
+            setSelectedOrders(new Set());
+            setBulkMode(false);
+            fetchOrders();
+            if (failed) {
+              Alert.alert('Partly updated', `${updated.length} order(s) updated, ${failed} could not be updated. Pull down to refresh.`);
+            } else {
+              Alert.alert('Success', `${updated.length} order(s) updated`);
             }
           }
         }
@@ -241,7 +283,7 @@ export default function StaffDashboard() {
         .from('profiles')
         .select('id, full_name, phone, email')
         .eq('role', 'courier');
-      
+
       setAvailableCouriers(couriers || []);
     } catch (error) {
       console.error('Error loading couriers:', error);
@@ -328,12 +370,19 @@ export default function StaffDashboard() {
     }
 
     try {
-      const { error } = await supabase
+      const { data: changed, error } = await supabase
         .from('orders')
         .update({ status: 'out_for_delivery' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('status', 'ready')
+        .select('id');
 
       if (error) throw error;
+      if (!changed?.length) {
+        // The courier already started the delivery
+        fetchOrders();
+        return;
+      }
 
       // Send notification to customer
       if (order.customer_id) {
@@ -355,10 +404,10 @@ export default function StaffDashboard() {
   const filteredOrders = orders.filter(order => {
     // Status filter
     if (activeTab !== 'all' && order.status !== activeTab) return false;
-    
+
     // Date filter
     if (!isWithinDateFilter(order.created_at)) return false;
-    
+
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -368,17 +417,17 @@ export default function StaffDashboard() {
         return false;
       }
     }
-    
+
     return true;
   });
 
   const renderOrderCard = ({ item, index }: { item: Order; index: number }) => {
     const itemCount = item.order_items?.length || 0;
     const isSelected = selectedOrders.has(item.id);
-    
+
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => bulkMode ? toggleOrderSelection(item.id) : setSelectedOrder(item)}
           onLongPress={() => {
             setBulkMode(true);
@@ -387,14 +436,14 @@ export default function StaffDashboard() {
         >
           <PremiumCard style={[styles.orderCard, isSelected && styles.selectedCard]}>
             {bulkMode && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.checkbox}
                 onPress={() => toggleOrderSelection(item.id)}
               >
-                <Ionicons 
-                  name={isSelected ? 'checkbox' : 'square-outline'} 
-                  size={24} 
-                  color={isSelected ? COLORS.primary : COLORS.border} 
+                <Ionicons
+                  name={isSelected ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color={isSelected ? COLORS.primary : COLORS.border}
                 />
               </TouchableOpacity>
             )}
@@ -423,18 +472,22 @@ export default function StaffDashboard() {
                 <Text style={styles.infoText}>₦{item.total_amount.toFixed(2)}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons 
-                  name={item.payment_status === 'paid' ? 'checkmark-circle' : 'time-outline'} 
-                  size={16} 
-                  color={item.payment_status === 'paid' ? COLORS.success : COLORS.warning} 
+                <Ionicons
+                  name={item.payment_status === 'paid' ? 'checkmark-circle' : 'cash-outline'}
+                  size={16}
+                  color={item.payment_status === 'paid' ? COLORS.success : COLORS.warning}
                 />
-                <Text style={styles.infoText}>{item.payment_status}</Text>
+                <Text style={styles.infoText}>
+                  {item.payment_status === 'paid'
+                    ? (item.payment_method === 'card' ? 'Paid by card' : 'Cash paid')
+                    : 'Cash on delivery'}
+                </Text>
               </View>
             </View>
 
             <View style={styles.actionRow}>
               {item.status === 'pending' && (
-                <PremiumButton 
+                <PremiumButton
                   title="Start Preparing"
                   onPress={() => updateStatus(item.id, 'pending')}
                   style={styles.actionButton}
@@ -442,7 +495,7 @@ export default function StaffDashboard() {
                 />
               )}
               {item.status === 'preparing' && (
-                <PremiumButton 
+                <PremiumButton
                   title="Mark Ready"
                   onPress={() => updateStatus(item.id, 'preparing')}
                   style={styles.actionButton}
@@ -450,7 +503,7 @@ export default function StaffDashboard() {
                 />
               )}
               {item.status === 'ready' && !item.courier_id && (
-                <PremiumButton 
+                <PremiumButton
                   title="Assign Courier"
                   onPress={() => openCourierModal(item)}
                   style={styles.actionButton}
@@ -465,7 +518,7 @@ export default function StaffDashboard() {
                 </View>
               )}
               {item.status === 'ready' && item.courier_id && (item as any).courier_accepted_at && (
-                <PremiumButton 
+                <PremiumButton
                   title="Mark Out for Delivery"
                   onPress={() => handleMarkOutForDelivery(item.id)}
                   style={styles.actionButton}
@@ -517,8 +570,8 @@ export default function StaffDashboard() {
           </View>
 
           <View>
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterContainer}
             >
@@ -560,7 +613,7 @@ export default function StaffDashboard() {
           </TouchableOpacity>
         </View>
       )}
-      
+
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderCard}
@@ -714,24 +767,24 @@ export default function StaffDashboard() {
       {/* Bulk Action Toolbar */}
       {bulkMode && (
         <View style={styles.bulkToolbar}>
-          <TouchableOpacity 
-            style={styles.bulkAction} 
+          <TouchableOpacity
+            style={styles.bulkAction}
             onPress={() => handleBulkStatusUpdate('preparing')}
           >
             <Ionicons name="restaurant" size={24} color={COLORS.info} />
             <Text style={styles.bulkActionText}>Prepare</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.bulkAction} 
+
+          <TouchableOpacity
+            style={styles.bulkAction}
             onPress={() => handleBulkStatusUpdate('ready')}
           >
             <Ionicons name="checkmark-done-circle" size={24} color={COLORS.success} />
             <Text style={styles.bulkActionText}>Ready</Text>
           </TouchableOpacity>
-          
-           <TouchableOpacity 
-            style={styles.bulkAction} 
+
+           <TouchableOpacity
+            style={styles.bulkAction}
             onPress={() => handleBulkStatusUpdate('out_for_delivery')}
           >
             <Ionicons name="bicycle" size={24} color={COLORS.primary} />

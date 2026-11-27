@@ -133,7 +133,7 @@ export default function CourierDashboard() {
           onPress: async () => {
             const { success } = await confirmCourierPickup(orderId, user.id);
             if (success) {
-              Alert.alert('Success', 'Pickup confirmed! Staff can now mark it as out for delivery.');
+              Alert.alert('Pickup confirmed', 'Open the order and tap Start Delivery when you leave.');
               fetchOrders();
             } else {
               Alert.alert('Error', 'Failed to confirm pickup');
@@ -206,7 +206,7 @@ export default function CourierDashboard() {
   };
 
   const renderMyDeliveryItem = ({ item }: { item: Order }) => {
-    const needsPickupConfirmation = !item.courier_accepted_at;
+    const needsPickupConfirmation = !item.courier_accepted_at && item.status === 'ready';
 
     return (
       <TouchableOpacity 
@@ -256,8 +256,15 @@ export default function CourierDashboard() {
 
           {!needsPickupConfirmation && item.status === 'ready' && (
             <View style={styles.waitingStatus}>
-              <Ionicons name="hourglass" size={16} color={COLORS.warning} />
-              <Text style={styles.waitingText}>Waiting for staff to mark as out for delivery...</Text>
+              <Ionicons name="play-circle" size={16} color={COLORS.warning} />
+              <Text style={styles.waitingText}>Picked up. Tap to start the delivery.</Text>
+            </View>
+          )}
+
+          {item.status === 'out_for_delivery' && (
+            <View style={styles.waitingStatus}>
+              <Ionicons name="bicycle" size={16} color={COLORS.primary} />
+              <Text style={styles.waitingText}>On the way. Tap to complete the delivery.</Text>
             </View>
           )}
         </PremiumCard>

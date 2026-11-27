@@ -69,7 +69,7 @@ export default function CheckoutScreen() {
       
       try {
         // 1. Create order as pending FIRST
-        const order = await createOrder('pending');
+        const order = await createOrder('card');
         setPendingOrderId(order.id);
         setPendingAmount(Number(order.total_amount));
         paymentSucceededRef.current = false;
@@ -87,7 +87,7 @@ export default function CheckoutScreen() {
       setLoading(true);
       
       try {
-        await createOrder('pending');
+        await createOrder('cash');
         handleSuccess();
       } catch (error: any) {
         Alert.alert('Error', error.message || 'Failed to place order');
@@ -96,7 +96,9 @@ export default function CheckoutScreen() {
       }
   };
 
-  const createOrder = async (paymentStatus: 'paid' | 'pending', transactionId?: string) => {
+  // Orders always start unpaid; card orders are marked paid by
+  // verify_payment_flutterwave, cash orders when they are delivered.
+  const createOrder = async (paymentMethod: 'card' | 'cash') => {
     if (!user) throw new Error('User not authenticated');
     if (!deliveryAddress) throw new Error('No delivery address selected');
 
@@ -106,7 +108,8 @@ export default function CheckoutScreen() {
           customer_id: user.id,
           total_amount: totalAmount,
           status: 'pending',
-          payment_status: paymentStatus,
+          payment_status: 'pending',
+          payment_method: paymentMethod,
           delivery_address: toDeliveryAddress(deliveryAddress),
           delivery_notes: deliveryNotes.trim() || null,
         })

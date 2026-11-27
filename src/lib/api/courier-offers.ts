@@ -17,7 +17,7 @@ export interface CourierOffer {
  */
 export async function createCourierOffer(orderId: string, courierId: string): Promise<{ success: boolean; error?: any; data?: CourierOffer }> {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('courier_offers')
       .insert({
         order_id: orderId,
@@ -26,6 +26,22 @@ export async function createCourierOffer(orderId: string, courierId: string): Pr
       })
       .select()
       .single();
+
+    // One offer per courier per order: offering again after withdrawing
+    // re-opens the earlier offer instead.
+    if (error?.code === '23505') {
+      ({ data, error } = await supabase
+        .from('courier_offers')
+        .update({ status: 'pending', offered_at: new Date().toISOString() })
+        .eq('order_id', orderId)
+        .eq('courier_id', courierId)
+        .eq('status', 'withdrawn')
+        .select()
+        .maybeSingle());
+      if (!error && !data) {
+        throw new Error('You have already offered for this order, or the kitchen declined your offer.');
+      }
+    }
 
     if (error) throw error;
     
