@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { CatalogDish, fetchCatalog, getMenuItemNames, importDishes } from '../../lib/api/catalog';
 import { COLORS, SPACING, FONTS, SIZES } from '../../constants/theme';
 import PremiumButton from '../../components/PremiumButton';
+import { useKeyboardSpace } from '../../components/KeyboardAware';
 
 export default function ImportMenuScreen() {
   const navigation = useNavigation<any>();
@@ -16,6 +17,8 @@ export default function ImportMenuScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const listRef = useRef<FlatList<CatalogDish>>(null);
+  const { space: keyboardSpace, onSpaceLayout } = useKeyboardSpace(listRef);
 
   const load = async () => {
     setLoading(true);
@@ -146,11 +149,13 @@ export default function ImportMenuScreen() {
           </View>
 
           <FlatList
+            ref={listRef}
             data={visible}
             keyExtractor={d => String(d.id)}
             renderItem={renderDish}
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
+            ListFooterComponent={<View style={{ height: keyboardSpace }} onLayout={onSpaceLayout} />}
           />
 
           <View style={styles.footer}>

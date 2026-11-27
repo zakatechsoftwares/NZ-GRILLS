@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
@@ -8,6 +8,7 @@ import { COLORS, SPACING, FONTS } from '../../constants/theme';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
 import ScreenHeader from '../../components/ScreenHeader';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -48,7 +49,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <ScreenHeader title="Edit Profile" />
 
       <View style={styles.form}>
@@ -77,7 +78,7 @@ export default function EditProfileScreen() {
       </View>
 
       <PremiumButton title="Save Changes" onPress={handleSave} isLoading={saving} />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

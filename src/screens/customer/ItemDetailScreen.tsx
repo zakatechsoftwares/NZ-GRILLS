@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Dimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
@@ -7,6 +7,7 @@ import { useCart } from '../../lib/CartContext';
 import { Database } from '../../types/supabase';
 import PremiumButton from '../../components/PremiumButton';
 import PremiumInput from '../../components/PremiumInput';
+import { useKeyboardSpace } from '../../components/KeyboardAware';
 import Animated, { FadeInDown, FadeIn, SlideInDown, Extrapolation, interpolate, useAnimatedScrollHandler, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
 type MenuItem = Database['public']['Tables']['menu_items']['Row'];
@@ -23,6 +24,8 @@ export default function ItemDetailScreen() {
   const [instructions, setInstructions] = useState('');
 
   const scrollY = useSharedValue(0);
+  const scrollRef = useRef<any>(null);
+  const { space: keyboardSpace, onSpaceLayout } = useKeyboardSpace(scrollRef);
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
@@ -61,6 +64,8 @@ export default function ItemDetailScreen() {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
       <Animated.ScrollView 
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -122,6 +127,7 @@ export default function ItemDetailScreen() {
 
           <View style={{ height: 100 }} /> 
         </View>
+        <View style={{ height: keyboardSpace }} onLayout={onSpaceLayout} />
       </Animated.ScrollView>
 
       {/* Floting Back Button */}

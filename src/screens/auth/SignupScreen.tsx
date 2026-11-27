@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, ROLES, SIZES } from '../../constants/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
 import { Ionicons } from '@expo/vector-icons';
 import { performGoogleSignIn } from '../../lib/auth-helpers';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 export default function SignupScreen() {
   const navigation = useNavigation<any>();
@@ -86,7 +87,7 @@ export default function SignupScreen() {
 
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Join us to order delicious food</Text>
@@ -161,7 +162,7 @@ export default function SignupScreen() {
           textStyle={styles.linkText}
         />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

@@ -14,6 +14,8 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // While typing, sit at the top of the screen so the keyboard can't cover the card.
+  const [typing, setTyping] = useState(false);
 
   const handleSubmit = async () => {
     try {
@@ -21,6 +23,7 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
       await onSubmit(rating, comment);
       setComment('');
       setRating(5);
+      setTyping(false);
       onClose();
     } catch (error) {
       console.error(error);
@@ -30,8 +33,8 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={[styles.overlay, typing && styles.overlayTyping]}>
         <View style={styles.container}>
           <Text style={styles.title}>Rate your Order</Text>
           
@@ -54,6 +57,8 @@ export default function RatingModal({ visible, onClose, onSubmit }: RatingModalP
             onChangeText={setComment}
             multiline
             numberOfLines={4}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTyping(false)}
           />
 
           <View style={styles.buttons}>
@@ -79,6 +84,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     padding: SPACING.m,
+  },
+  overlayTyping: {
+    justifyContent: 'flex-start',
+    paddingTop: 60,
   },
   container: {
     backgroundColor: COLORS.background,

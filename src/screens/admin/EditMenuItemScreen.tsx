@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
 import { Database } from '../../types/supabase';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 type Category = Database['public']['Tables']['categories']['Row'];
 
@@ -133,7 +134,7 @@ export default function EditMenuItemScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
+    <KeyboardAwareScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -205,7 +206,7 @@ export default function EditMenuItemScreen() {
           style={styles.saveButton}
         />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

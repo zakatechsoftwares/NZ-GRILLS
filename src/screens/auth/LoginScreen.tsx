@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { COLORS, SPACING, FONTS, SIZES } from '../../constants/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
 import { Ionicons } from '@expo/vector-icons';
 import { performGoogleSignIn } from '../../lib/auth-helpers';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -47,11 +48,8 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue ordering</Text>
@@ -100,8 +98,8 @@ export default function LoginScreen() {
             textStyle={styles.linkText}
           />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 

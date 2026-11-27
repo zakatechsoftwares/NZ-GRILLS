@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useCart } from '../../lib/CartContext';
 import { useAuth } from '../../lib/AuthContext';
@@ -11,6 +11,7 @@ import PremiumInput from '../../components/PremiumInput';
 import PremiumCard from '../../components/PremiumCard';
 import FlutterwaveWebView from '../../components/FlutterwaveWebView';
 import { Address, formatAddress, getAddress, getDefaultAddress, toDeliveryAddress } from '../../lib/api/addresses';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 export default function CheckoutScreen() {
   const navigation = useNavigation<any>();
@@ -215,7 +216,7 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
              <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -346,7 +347,7 @@ export default function CheckoutScreen() {
         onError={handlePaymentError}
       />
       
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

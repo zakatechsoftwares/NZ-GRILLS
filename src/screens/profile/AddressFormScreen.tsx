@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Switch, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, Switch, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/AuthContext';
@@ -9,6 +9,7 @@ import { COLORS, SPACING, FONTS } from '../../constants/theme';
 import PremiumInput from '../../components/PremiumInput';
 import PremiumButton from '../../components/PremiumButton';
 import ScreenHeader from '../../components/ScreenHeader';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 const LABEL_SUGGESTIONS = ['Hostel', 'Home', 'Office'];
 
@@ -100,7 +101,7 @@ export default function AddressFormScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScrollView contentContainerStyle={styles.container}>
       <ScreenHeader title={addressId ? 'Edit Address' : 'New Address'} />
 
       <View style={styles.form}>
@@ -162,7 +163,7 @@ export default function AddressFormScreen() {
       </View>
 
       <PremiumButton title="Save Address" onPress={handleSave} isLoading={saving} />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

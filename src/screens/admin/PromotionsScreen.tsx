@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, Platform, TouchableOpacity } from 'react-native';
 import { COLORS, SPACING, FONTS, SIZES, SHADOWS } from '../../constants/theme';
 import PremiumButton from '../../components/PremiumButton';
 import PremiumInput from '../../components/PremiumInput';
@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
+import KeyboardAwareScrollView from '../../components/KeyboardAware';
 
 export default function PromotionsScreen() {
   const [title, setTitle] = useState('');
@@ -112,7 +113,7 @@ export default function PromotionsScreen() {
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAwareScrollView style={styles.container}>
       <ScreenHeader title="Send Promotion" style={styles.header} />
       
       <View style={styles.card}>
@@ -159,7 +160,7 @@ export default function PromotionsScreen() {
           style={styles.button}
         />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
