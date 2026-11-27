@@ -81,6 +81,7 @@ export default function OrdersScreen() {
     const { success, error } = await submitReview(ratingOrderId, rating, comment);
 
     if (success) {
+      fetchOrders();
       Alert.alert('Thank You', 'Your review has been submitted.');
     } else {
       Alert.alert('Error', error?.message || 'Failed to submit review');
@@ -131,6 +132,7 @@ export default function OrdersScreen() {
 
   const renderItem = ({ item, index }: { item: Order; index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 100).duration(500)} layout={Layout.springify()}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
       <PremiumCard style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.date}>
@@ -172,8 +174,18 @@ export default function OrdersScreen() {
           </View>
         )}
 
+        {/* Rating given */}
+        {item.status === 'delivered' && !!item.rating && (
+          <View style={[styles.actionRow, styles.ratedRow]}>
+            <Text style={styles.ratedText}>You rated this order</Text>
+            {[1, 2, 3, 4, 5].map(star => (
+              <Ionicons key={star} name={star <= (item.rating ?? 0) ? 'star' : 'star-outline'} size={16} color={COLORS.primary} />
+            ))}
+          </View>
+        )}
+
         {/* Rate Order Button */}
-        {item.status === 'delivered' && (
+        {item.status === 'delivered' && !item.rating && (
           <View style={styles.actionRow}>
             <PremiumButton
               title="Rate Order"
@@ -185,6 +197,7 @@ export default function OrdersScreen() {
           </View>
         )}
       </PremiumCard>
+      </TouchableOpacity>
     </Animated.View>
   );
 
@@ -215,6 +228,16 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  ratedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  ratedText: {
+    ...FONTS.body3,
+    color: COLORS.textSecondary,
+    marginRight: SPACING.s,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

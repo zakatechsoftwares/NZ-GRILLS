@@ -93,16 +93,20 @@ export const submitReview = async (orderId: string, rating: number, comment: str
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { error } = await supabase
-      .from('reviews')
-      .insert({
-        user_id: user.id,
-        order_id: orderId,
-        rating,
-        comment
-      });
+    // Stored on the order, where the admin's All Orders screen reads it.
+    // Only delivered, not-yet-rated orders can be rated.
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ rating, review: comment.trim() || null })
+      .eq('id', orderId)
+      .eq('customer_id', user.id)
+      .eq('status', 'delivered')
+      .is('rating', null)
+      .select('id');
 
-    return { success: !error, error };
+    if (error) return { success: false, error };
+    if (!data?.length) return { success: false, error: new Error('This order has already been rated.') };
+    return { success: true, error: null };
   } catch (error) {
     return { success: false, error };
   }
@@ -113,7 +117,7 @@ export const getItemReviews = async (menuItemId: string): Promise<Review[]> => {
   // Ideally, we'd query reviews where order.order_items.menu_item_id = menuItemId
   // For MVP, we might skip "Item Reviews" unless we join tables heavily.
   // Alternative: Show "Recent Reviews" for the specific item if we had menu_item_id in reviews, but we put order_id.
-  
+
   // Let's stick to Order Reviews for now.
   return [];
 };

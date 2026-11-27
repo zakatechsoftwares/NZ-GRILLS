@@ -22,11 +22,11 @@ export default function OrderDetailScreen() {
 
   useEffect(() => {
     fetchOrderDetail();
-    
+
     const subscription = supabase
       .channel(`order-${orderId}`)
       .on(
-        'postgres_changes', 
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
         () => fetchOrderDetail()
       )
@@ -45,7 +45,7 @@ export default function OrderDetailScreen() {
         `)
         .eq('id', orderId)
         .single();
-      
+
       if (orderError) throw orderError;
       setOrder(orderData);
 
@@ -79,9 +79,18 @@ export default function OrderDetailScreen() {
   }
 
   // Visual Tracker
-  const steps = ['pending', 'preparing', 'ready', 'delivered'];
+  const steps = ['pending', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
   const status = order.status ?? 'pending';
   const currentStepIndex = steps.indexOf(status) > -1 ? steps.indexOf(status) : 0;
+  const awaitingPayment = status === 'pending' && order.payment_method === 'card' && order.payment_status !== 'paid';
+  const statusTitle = awaitingPayment ? 'PAYMENT NOT COMPLETED' : status.replace(/_/g, ' ').toUpperCase();
+  const statusMessage = awaitingPayment ? 'Payment for this order was not completed, so it has not been sent to the kitchen.' :
+    status === 'pending' ? 'Waiting for restaurant confirmation...' :
+    status === 'preparing' ? 'Kitchen is preparing your food.' :
+    status === 'ready' ? 'Your food is ready and waiting for a courier.' :
+    status === 'out_for_delivery' ? 'Your order is on the way.' :
+    status === 'delivered' ? 'Order delivered. Enjoy your meal!' :
+    status === 'cancelled' ? 'This order was cancelled.' : '';
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -96,16 +105,12 @@ export default function OrderDetailScreen() {
         <PremiumCard style={styles.statusCard}>
             <View style={styles.statusHeader}>
                 <Ionicons name="time-outline" size={24} color={COLORS.primary} />
-                <Text style={styles.statusText}>{status.toUpperCase()}</Text>
+                <Text style={styles.statusText}>{statusTitle}</Text>
             </View>
-            <Text style={styles.estimatedText}>
-                {order.status === 'pending' ? 'Waiting for restaurant confirmation...' : 
-                order.status === 'preparing' ? 'Kitchen is preparing your food.' :
-                order.status === 'ready' ? 'Your food is ready for pickup/delivery.' :
-                order.status === 'delivered' ? 'Order delivered. Enjoy your meal!' : ''}
-            </Text>
-            
+            <Text style={styles.estimatedText}>{statusMessage}</Text>
+
             {/* Simple Step Indicator */}
+            {status !== 'cancelled' && !awaitingPayment && (
             <View style={styles.stepsContainer}>
                 {steps.map((step, index) => {
                     const isActive = index <= currentStepIndex;
@@ -114,6 +119,17 @@ export default function OrderDetailScreen() {
                     );
                 })}
             </View>
+            )}
+
+            {status === 'out_for_delivery' && (
+                <TouchableOpacity
+                    style={styles.trackLink}
+                    onPress={() => (navigation as any).navigate('TrackDelivery', { orderId: order.id })}
+                >
+                    <Ionicons name="navigate" size={18} color={COLORS.primary} />
+                    <Text style={styles.trackLinkText}>Track delivery</Text>
+                </TouchableOpacity>
+            )}
         </PremiumCard>
       </Animated.View>
 
@@ -132,7 +148,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.totalAmount}>₦{order.total_amount.toFixed(2)}</Text>
         </View>
       </PremiumCard>
-      
+
       <PremiumCard>
         <Text style={styles.sectionTitle}>Delivery Info</Text>
         <View style={styles.infoRow}>
@@ -154,8 +170,8 @@ export default function OrderDetailScreen() {
                     <Text style={styles.courierPhone}>{(order as any).courier?.phone || 'No phone'}</Text>
                 </View>
                 {(order as any).courier?.phone && (
-                    <TouchableOpacity 
-                        onPress={() => Linking.openURL(`tel:${(order as any).courier.phone}`)} 
+                    <TouchableOpacity
+                        onPress={() => Linking.openURL(`tel:${(order as any).courier.phone}`)}
                         style={styles.callButton}
                     >
                         <Ionicons name="call" size={20} color={COLORS.surface} />
@@ -170,6 +186,17 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  trackLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.m,
+  },
+  trackLinkText: {
+    ...FONTS.body3,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
   container: {
     flexGrow: 1,
     backgroundColor: COLORS.background,
